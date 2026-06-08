@@ -1,0 +1,1082 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Nicholas Reynard Kusuma — Portfolio</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg:        #0a0a0a;
+      --bg2:       #111111;
+      --bg3:       #161616;
+      --border:    #222222;
+      --gold:      #c9a84c;
+      --gold-dim:  #8a6e30;
+      --text:      #e8e2d9;
+      --text-dim:  #888070;
+      --text-mute: #444038;
+      --white:     #f5f0e8;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 300;
+      overflow-x: hidden;
+    }
+
+    /* ─── NOISE OVERLAY ─── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 999;
+      opacity: 0.4;
+    }
+
+    /* ─── NAV ─── */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1.5rem 4rem;
+      border-bottom: 1px solid transparent;
+      transition: all 0.4s ease;
+      backdrop-filter: blur(0px);
+    }
+    nav.scrolled {
+      background: rgba(10,10,10,0.92);
+      border-color: var(--border);
+      backdrop-filter: blur(12px);
+    }
+    .nav-logo {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.1rem;
+      color: var(--gold);
+      letter-spacing: 0.02em;
+      text-decoration: none;
+    }
+    .nav-links {
+      display: flex;
+      gap: 2.5rem;
+      list-style: none;
+    }
+    .nav-links a {
+      color: var(--text-dim);
+      text-decoration: none;
+      font-size: 0.8rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      transition: color 0.2s;
+    }
+    .nav-links a:hover { color: var(--gold); }
+
+    /* ─── HERO ─── */
+    #hero {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      padding: 0 4rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero-grid-bg {
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(var(--border) 1px, transparent 1px),
+        linear-gradient(90deg, var(--border) 1px, transparent 1px);
+      background-size: 60px 60px;
+      mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black 20%, transparent 100%);
+      opacity: 0.35;
+    }
+
+    .hero-glow {
+      position: absolute;
+      width: 600px; height: 600px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(201,168,76,0.08) 0%, transparent 70%);
+      top: 50%; left: 30%;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+    }
+
+    .hero-content {
+      position: relative;
+      max-width: 900px;
+    }
+
+    .hero-tag {
+      display: inline-block;
+      font-family: 'DM Mono', monospace;
+      font-size: 0.72rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--gold);
+      border: 1px solid var(--gold-dim);
+      padding: 0.35rem 0.9rem;
+      margin-bottom: 2rem;
+      opacity: 0;
+      animation: fadeUp 0.8s ease 0.2s forwards;
+    }
+
+    .hero-name {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(3rem, 7vw, 6.5rem);
+      font-weight: 700;
+      line-height: 0.95;
+      color: var(--white);
+      margin-bottom: 1.5rem;
+      opacity: 0;
+      animation: fadeUp 0.8s ease 0.4s forwards;
+    }
+    .hero-name span { color: var(--gold); }
+
+    .hero-desc {
+      font-size: 1.05rem;
+      line-height: 1.8;
+      color: var(--text-dim);
+      max-width: 560px;
+      margin-bottom: 3rem;
+      font-weight: 300;
+      opacity: 0;
+      animation: fadeUp 0.8s ease 0.6s forwards;
+    }
+
+    .hero-cta {
+      display: flex;
+      gap: 1.2rem;
+      flex-wrap: wrap;
+      opacity: 0;
+      animation: fadeUp 0.8s ease 0.8s forwards;
+    }
+
+    .btn-primary {
+      background: var(--gold);
+      color: var(--bg);
+      padding: 0.85rem 2rem;
+      font-family: 'DM Mono', monospace;
+      font-size: 0.78rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      text-decoration: none;
+      font-weight: 500;
+      transition: all 0.25s;
+    }
+    .btn-primary:hover {
+      background: var(--white);
+      transform: translateY(-2px);
+    }
+
+    .btn-outline {
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+      padding: 0.85rem 2rem;
+      font-family: 'DM Mono', monospace;
+      font-size: 0.78rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      text-decoration: none;
+      transition: all 0.25s;
+    }
+    .btn-outline:hover {
+      border-color: var(--gold);
+      color: var(--gold);
+      transform: translateY(-2px);
+    }
+
+    .hero-stats {
+      position: absolute;
+      right: 4rem;
+      bottom: 4rem;
+      display: flex;
+      gap: 3rem;
+      opacity: 0;
+      animation: fadeUp 0.8s ease 1s forwards;
+    }
+    .stat-item { text-align: right; }
+    .stat-number {
+      font-family: 'Playfair Display', serif;
+      font-size: 2rem;
+      color: var(--gold);
+      display: block;
+    }
+    .stat-label {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.65rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text-mute);
+    }
+
+    /* ─── SECTIONS ─── */
+    section { padding: 7rem 4rem; }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+      margin-bottom: 4rem;
+    }
+    .section-num {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.7rem;
+      color: var(--gold);
+      letter-spacing: 0.15em;
+    }
+    .section-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 2.2rem;
+      color: var(--white);
+      font-weight: 600;
+    }
+    .section-line {
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+      max-width: 200px;
+    }
+
+    /* ─── ABOUT ─── */
+    #about { background: var(--bg2); }
+
+    .about-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 5rem;
+      align-items: start;
+    }
+
+    .about-text p {
+      color: var(--text-dim);
+      line-height: 1.9;
+      margin-bottom: 1.4rem;
+      font-size: 0.98rem;
+    }
+    .about-text p strong {
+      color: var(--text);
+      font-weight: 500;
+    }
+
+    .about-details {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .detail-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .detail-label {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.68rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text-mute);
+    }
+    .detail-value {
+      font-size: 0.9rem;
+      color: var(--text);
+      text-align: right;
+    }
+
+    /* ─── PROJECTS ─── */
+    #projects { background: var(--bg); }
+
+    .projects-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+      gap: 1.5px;
+      background: var(--border);
+      border: 1px solid var(--border);
+    }
+
+    .project-card {
+      background: var(--bg);
+      padding: 2.5rem;
+      transition: background 0.25s;
+      position: relative;
+      overflow: hidden;
+      cursor: pointer;
+    }
+    .project-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0;
+      width: 3px; height: 0;
+      background: var(--gold);
+      transition: height 0.35s ease;
+    }
+    .project-card:hover { background: var(--bg3); }
+    .project-card:hover::before { height: 100%; }
+
+    .project-type {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.65rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 1rem;
+    }
+    .project-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.25rem;
+      color: var(--white);
+      margin-bottom: 0.8rem;
+      line-height: 1.3;
+    }
+    .project-desc {
+      font-size: 0.85rem;
+      color: var(--text-dim);
+      line-height: 1.75;
+      margin-bottom: 1.5rem;
+    }
+    .project-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+    .tag {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.62rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 0.25rem 0.6rem;
+      border: 1px solid var(--border);
+      color: var(--text-mute);
+    }
+    .project-link {
+      display: inline-block;
+      margin-top: 1.5rem;
+      font-family: 'DM Mono', monospace;
+      font-size: 0.7rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--gold);
+      text-decoration: none;
+      border-bottom: 1px solid var(--gold-dim);
+      padding-bottom: 2px;
+      transition: all 0.2s;
+    }
+    .project-link:hover { color: var(--white); border-color: var(--white); }
+
+    /* ─── RESEARCH ─── */
+    #research { background: var(--bg2); }
+
+    .research-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+
+    .research-item {
+      display: grid;
+      grid-template-columns: 80px 1fr auto;
+      gap: 2.5rem;
+      align-items: start;
+      padding: 2.5rem 0;
+      border-bottom: 1px solid var(--border);
+      transition: background 0.2s;
+    }
+    .research-item:first-child { border-top: 1px solid var(--border); }
+
+    .research-year {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.75rem;
+      color: var(--gold);
+      letter-spacing: 0.05em;
+      padding-top: 0.2rem;
+    }
+
+    .research-body {}
+    .research-venue {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.65rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--gold-dim);
+      margin-bottom: 0.5rem;
+    }
+    .research-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.1rem;
+      color: var(--white);
+      margin-bottom: 0.6rem;
+      line-height: 1.4;
+    }
+    .research-desc {
+      font-size: 0.83rem;
+      color: var(--text-dim);
+      line-height: 1.7;
+    }
+
+    .research-badge {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.62rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 0.3rem 0.8rem;
+      white-space: nowrap;
+    }
+    .badge-published {
+      background: rgba(201,168,76,0.1);
+      color: var(--gold);
+      border: 1px solid var(--gold-dim);
+    }
+    .badge-competition {
+      background: rgba(255,255,255,0.04);
+      color: var(--text-dim);
+      border: 1px solid var(--border);
+    }
+
+    /* ─── SKILLS ─── */
+    #skills { background: var(--bg); }
+
+    .skills-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 2rem;
+    }
+
+    .skill-group {
+      padding: 2rem;
+      border: 1px solid var(--border);
+      position: relative;
+      transition: border-color 0.25s;
+    }
+    .skill-group:hover { border-color: var(--gold-dim); }
+
+    .skill-group-label {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.65rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 1.5rem;
+    }
+
+    .skill-items {
+      display: flex;
+      flex-direction: column;
+      gap: 0.9rem;
+    }
+
+    .skill-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .skill-name {
+      font-size: 0.88rem;
+      color: var(--text);
+    }
+    .skill-bar-wrap {
+      width: 100px;
+      height: 2px;
+      background: var(--border);
+      position: relative;
+    }
+    .skill-bar {
+      position: absolute;
+      top: 0; left: 0;
+      height: 100%;
+      background: var(--gold);
+      transition: width 1.2s ease;
+    }
+
+    /* ─── CONTACT ─── */
+    #contact {
+      background: var(--bg2);
+      text-align: center;
+    }
+
+    .contact-inner {
+      max-width: 640px;
+      margin: 0 auto;
+    }
+
+    .contact-heading {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(2rem, 5vw, 3.5rem);
+      color: var(--white);
+      margin-bottom: 1.2rem;
+      line-height: 1.1;
+    }
+    .contact-heading span { color: var(--gold); }
+
+    .contact-sub {
+      color: var(--text-dim);
+      font-size: 0.95rem;
+      line-height: 1.8;
+      margin-bottom: 3rem;
+    }
+
+    .contact-links {
+      display: flex;
+      justify-content: center;
+      gap: 1.5rem;
+      flex-wrap: wrap;
+    }
+
+    .contact-link {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      font-family: 'DM Mono', monospace;
+      font-size: 0.75rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      text-decoration: none;
+      border: 1px solid var(--border);
+      padding: 0.85rem 1.5rem;
+      transition: all 0.25s;
+    }
+    .contact-link:hover {
+      border-color: var(--gold);
+      color: var(--gold);
+      transform: translateY(-2px);
+    }
+
+    /* ─── FOOTER ─── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 2rem 4rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .footer-name {
+      font-family: 'Playfair Display', serif;
+      font-size: 0.9rem;
+      color: var(--text-mute);
+    }
+    .footer-copy {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.65rem;
+      color: var(--text-mute);
+      letter-spacing: 0.08em;
+    }
+
+    /* ─── ANIMATIONS ─── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .reveal {
+      opacity: 0;
+      transform: translateY(28px);
+      transition: opacity 0.7s ease, transform 0.7s ease;
+    }
+    .reveal.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* ─── RESPONSIVE ─── */
+    @media (max-width: 900px) {
+      nav { padding: 1.2rem 2rem; }
+      #hero { padding: 0 2rem; }
+      .hero-stats { display: none; }
+      section { padding: 5rem 2rem; }
+      .about-grid { grid-template-columns: 1fr; gap: 3rem; }
+      .skills-grid { grid-template-columns: 1fr 1fr; }
+      .research-item { grid-template-columns: 60px 1fr; }
+      .research-badge { display: none; }
+      footer { padding: 1.5rem 2rem; flex-direction: column; gap: 0.5rem; text-align: center; }
+    }
+    @media (max-width: 600px) {
+      .skills-grid { grid-template-columns: 1fr; }
+      .nav-links { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav id="navbar">
+    <a class="nav-logo" href="#">NRK</a>
+    <ul class="nav-links">
+      <li><a href="#about">About</a></li>
+      <li><a href="#projects">Projects</a></li>
+      <li><a href="#research">Research</a></li>
+      <li><a href="#skills">Skills</a></li>
+      <li><a href="#contact">Contact</a></li>
+    </ul>
+  </nav>
+
+  <!-- HERO -->
+  <section id="hero">
+    <div class="hero-grid-bg"></div>
+    <div class="hero-glow"></div>
+    <div class="hero-content">
+      <span class="hero-tag">Applied Mathematics · Finance · Data Science</span>
+      <h1 class="hero-name">Nicholas<br><span>Reynard</span><br>Kusuma</h1>
+      <p class="hero-desc">
+        Applied Mathematics student at Universitas Pelita Harapan with a focus on financial engineering,
+        statistical modeling, data analysis, and quantitative problem-solving.
+      </p>
+      <div class="hero-cta">
+        <a href="#projects" class="btn-primary">View My Work</a>
+        <a href="#contact" class="btn-outline">Get in Touch</a>
+      </div>
+    </div>
+    <div class="hero-stats">
+      <div class="stat-item">
+        <span class="stat-number">2</span>
+        <span class="stat-label">Published Papers</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-number">1</span>
+        <span class="stat-label">Essay Competition</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-number">1</span>
+        <span class="stat-label">Quant Finance Project</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ABOUT -->
+  <section id="about">
+    <div class="section-header reveal">
+      <span class="section-num">01</span>
+      <h2 class="section-title">About</h2>
+      <div class="section-line"></div>
+    </div>
+    <div class="about-grid">
+      <div class="about-text reveal">
+        <p>
+          I'm a third-year Applied Mathematics student at Universitas Pelita Harapan, focusing
+          on <strong>financial engineering</strong> with a foundation in financial mathematics,
+          stochastic processes, statistical modeling, and data analysis.
+        </p>
+        <p>
+          My academic interests sit at the intersection of mathematical theory and
+          real-world financial application — from regression analysis and risk theory to
+          investment analysis and data-driven decision making. I'm drawn to problems where
+          <strong>quantitative reasoning creates clearer insight.</strong>
+        </p>
+        <p>
+          Outside of coursework, I tutor mathematics privately, co-coordinate my university's
+          mathematics student association, and organize events around stock trading and
+          investment education. I have co-authored academic work published in <strong>IEEE</strong> and
+          <strong>EKOMA</strong>, developed a <strong>Satria Data 2025 Statistics Essay Competition</strong>
+          paper applying XGBoost and SHAP to social welfare allocation, and completed an <strong>LSTM-based portfolio
+          optimization</strong> study across LQ45, DJIA, SSE50, and a Global portfolio.
+        </p>
+      </div>
+      <div class="about-details reveal">
+        <div class="detail-row">
+          <span class="detail-label">University</span>
+          <span class="detail-value">Universitas Pelita Harapan</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Major</span>
+          <span class="detail-value">Applied Mathematics — Financial Engineering</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Semester</span>
+          <span class="detail-value">6th Semester</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Focus Areas</span>
+          <span class="detail-value">Financial Analysis, Quantitative Finance</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Location</span>
+          <span class="detail-value">Tangerang, Indonesia</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Status</span>
+          <span class="detail-value">Open to Internships</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PROJECTS -->
+  <section id="projects">
+    <div class="section-header reveal">
+      <span class="section-num">02</span>
+      <h2 class="section-title">Selected Work</h2>
+      <div class="section-line"></div>
+    </div>
+    <div class="projects-grid reveal">
+
+      <div class="project-card">
+        <div class="project-type">Academic Support</div>
+        <h3 class="project-title">Teaching Assistant — Computer Application</h3>
+        <p class="project-desc">
+          Assisted the lecturer by grading and reviewing student homework for the Computer Application course.
+          Focused on accuracy, consistency, fairness, and feedback that helped students improve their understanding
+          of statistical concepts and problem-solving tasks.
+        </p>
+        <div class="project-tags">
+          <span class="tag">Teaching Assistant</span>
+          <span class="tag">Statistics</span>
+          <span class="tag">Assessment</span>
+          <span class="tag">Feedback</span>
+        </div>
+      </div>
+
+      <div class="project-card">
+        <div class="project-type">Mathematics Education</div>
+        <h3 class="project-title">Private Mathematics Tutoring</h3>
+        <p class="project-desc">
+          Provided private mathematics tutoring with emphasis on mathematical logic and intuitive problem-solving.
+          Designed personalized explanations that connect abstract concepts with practical examples to build students'
+          reasoning skills and confidence.
+        </p>
+        <div class="project-tags">
+          <span class="tag">Math Logic</span>
+          <span class="tag">Problem Solving</span>
+          <span class="tag">Tutoring</span>
+          <span class="tag">Communication</span>
+        </div>
+      </div>
+
+      <div class="project-card">
+        <div class="project-type">Finance & Investment</div>
+        <h3 class="project-title">Business Science Club — Investment Education Event</h3>
+        <p class="project-desc">
+          Led an educational event on stock trading and investment. Coordinated the session with PinePick from
+          Ciptadana Sekuritas and helped introduce students to investment concepts, trading insights, and financial
+          market applications.
+        </p>
+        <div class="project-tags">
+          <span class="tag">Investment</span>
+          <span class="tag">Stock Trading</span>
+          <span class="tag">Event Lead</span>
+          <span class="tag">Finance</span>
+        </div>
+      </div>
+
+      <div class="project-card">
+        <div class="project-type">Data Science Essay Competition</div>
+        <h3 class="project-title">Satria Data 2025 — ML-Based Social Welfare Allocation</h3>
+        <p class="project-desc">
+          Developed a Statistics Essay Competition paper proposing an explainable machine learning approach for
+          estimating provincial food social assistance needs. The analysis used BPS socio-economic indicators and
+          combined XGBoost prediction with SHAP interpretation to support fairer and more transparent policy allocation.
+        </p>
+        <div class="project-tags">
+          <span class="tag">XGBoost</span>
+          <span class="tag">SHAP</span>
+          <span class="tag">BPS Data</span>
+          <span class="tag">Policy Analytics</span>
+        </div>
+        <a href="Paper SEC Satria Data 2025.pdf" class="project-link" target="_blank">Read Paper →</a>
+      </div>
+
+      <div class="project-card">
+        <div class="project-type">Macroeconomics Research</div>
+        <h3 class="project-title">EKOMA Published Paper — Electricity Distribution & Household Access</h3>
+        <p class="project-desc">
+          Co-authored a published macroeconomics paper analyzing how electricity distribution, electricity generation,
+          and installed capacity relate to household electricity access across Indonesian provinces. The study used
+          provincial panel data, compared Fixed Effects and Random Effects models, and evaluated prediction performance
+          on recent out-of-sample data.
+        </p>
+        <div class="project-tags">
+          <span class="tag">Panel Data</span>
+          <span class="tag">Fixed Effects</span>
+          <span class="tag">R</span>
+          <span class="tag">Macroeconomics</span>
+        </div>
+        <a href="MAKRO_template_EKOMA.docx" class="project-link" target="_blank">Read Paper →</a>
+      </div>
+
+      <div class="project-card">
+        <div class="project-type">Student Organization</div>
+        <h3 class="project-title">HMPSM Internal Division Coordinator</h3>
+        <p class="project-desc">
+          Guided new HMPSM members in adapting to the organization, coordinated internal development, supported
+          member engagement, and helped prepare members who later became event heads.
+        </p>
+        <div class="project-tags">
+          <span class="tag">Leadership</span>
+          <span class="tag">Coordination</span>
+          <span class="tag">Mentoring</span>
+          <span class="tag">Teamwork</span>
+        </div>
+      </div>
+
+      <div class="project-card">
+        <div class="project-type">Mentorship Program</div>
+        <h3 class="project-title">ABC CareCom — Freshman Mentoring</h3>
+        <p class="project-desc">
+          Coordinated mentoring, bonding, and sharing sessions to help new Mathematics students understand study
+          paths such as Actuarial Science, Business, and Computing while building connections with seniors and lecturers.
+        </p>
+        <div class="project-tags">
+          <span class="tag">Mentoring</span>
+          <span class="tag">Program Design</span>
+          <span class="tag">Community</span>
+          <span class="tag">Leadership</span>
+        </div>
+      </div>
+      <div class="project-card">
+        <div class="project-type">Quantitative Finance & Machine Learning</div>
+        <h3 class="project-title">LSTM-Based Portfolio Optimization Across Multi-Market Equity Universes</h3>
+        <p class="project-desc">
+          Developed a comparative portfolio optimization study across LQ45, DJIA, SSE50, and a combined Global portfolio.
+          The project integrates LSTM return forecasting, historical covariance risk estimation, Minimum Variance and
+          Maximum Sharpe optimization, and out-of-sample evaluation to compare single-market and multi-market portfolios.
+        </p>
+        <div class="project-tags">
+          <span class="tag">LSTM</span>
+          <span class="tag">Portfolio Optimization</span>
+          <span class="tag">Sharpe Ratio</span>
+          <span class="tag">Python</span>
+        </div>
+        <a href="Final Paper LSTM Portofolio Optimization.pdf" class="project-link" target="_blank">Read Paper →</a>
+      </div>
+
+    </div>
+    <p style="margin-top:1.5rem; font-family:'DM Mono',monospace; font-size:0.7rem; color:var(--text-mute); letter-spacing:0.08em;">
+      * This section uses real CV-based experiences and uploaded academic papers. GitHub code links can be added later if repositories are created.
+    </p>
+  </section>
+
+  <!-- RESEARCH -->
+  <section id="research">
+    <div class="section-header reveal">
+      <span class="section-num">03</span>
+      <h2 class="section-title">Research & Writing</h2>
+      <div class="section-line"></div>
+    </div>
+    <div class="research-list reveal">
+
+      <div class="research-item">
+        <span class="research-year">2024</span>
+        <div class="research-body">
+          <div class="research-venue">IEEE — Co-authored Publication</div>
+          <h3 class="research-title">Application of Statistics and Technology in Addressing Economic Inequality Based on Social Welfare Disparities</h3>
+          <p class="research-desc">
+            Co-authored a publication discussing how statistical methods and technology can be used to address economic
+            inequality through social welfare disparities. This work reflects an interest in applying quantitative thinking
+            to social and economic problems.
+          </p>
+        </div>
+        <span class="research-badge badge-published">Published</span>
+      </div>
+
+      <div class="research-item">
+        <span class="research-year">2025</span>
+        <div class="research-body">
+          <div class="research-venue">SATRIA DATA 2025 — Statistics Essay Competition</div>
+          <h3 class="research-title">Penerapan Statistika dan Teknologi Dalam Mengatasi Kesenjangan Ekonomi Berdasarkan Ketimpangan Kesejahteraan Sosial untuk Menuju Indonesia Emas</h3>
+          <p class="research-desc">
+            Competition essay exploring how statistics, XGBoost, and SHAP can be used to predict and explain provincial
+            food social assistance needs. The work connects socio-economic indicators such as KPM, APS, Gini ratio,
+            wages, poverty-line variables, and IPM to more accountable data-driven welfare allocation.
+          </p>
+          <a href="Paper SEC Satria Data 2025.pdf" class="project-link" target="_blank">Read Paper →</a>
+        </div>
+        <span class="research-badge badge-competition">Competition</span>
+      </div>
+
+      <div class="research-item">
+        <span class="research-year">Published</span>
+        <div class="research-body">
+          <div class="research-venue">EKOMA — Published Macroeconomics Paper</div>
+          <h3 class="research-title">Pengaruh Distribusi Listrik Terhadap Akses Listrik Rumah Tangga di Indonesia: Analisis Data Panel Provinsi</h3>
+          <p class="research-desc">
+            Co-authored a macroeconomics paper using Indonesian provincial panel data to study household electricity access.
+            The research examined electricity distributed, electricity generated, and installed capacity, selected a two-way
+            Fixed Effects model through the Hausman test, and discussed the policy importance of electricity distribution networks.
+          </p>
+          <a href="MAKRO_template_EKOMA.docx" class="project-link" target="_blank">Read Paper →</a>
+        </div>
+        <span class="research-badge badge-published">Published</span>
+      </div>
+
+      <div class="research-item">
+        <span class="research-year">2026</span>
+        <div class="research-body">
+          <div class="research-venue">Quantitative Finance Paper</div>
+          <h3 class="research-title">LSTM-Based Portfolio Optimization Across Multi-Market Equity Universes: A Comparative Study of LQ45, DJIA, SSE50, and a Global Portfolio</h3>
+          <p class="research-desc">
+            Academic paper comparing portfolio construction across Indonesian, U.S., Chinese, and global equity universes.
+            The study combines LSTM-based return forecasts with covariance-based risk estimation, then evaluates Minimum
+            Variance and Maximum Sharpe portfolios using Sharpe ratio, Sortino ratio, cumulative wealth, and drawdown.
+          </p>
+          <a href="Final Paper LSTM Portofolio Optimization.pdf" class="project-link" target="_blank">Read Paper →</a>
+        </div>
+        <span class="research-badge badge-competition">Quant Finance</span>
+      </div>
+
+      <div class="research-item">
+        <span class="research-year">2026</span>
+        <div class="research-body">
+          <div class="research-venue">Current Academic Focus</div>
+          <h3 class="research-title">Financial Mathematics, Stochastic Processes, and Statistical Modeling</h3>
+          <p class="research-desc">
+            Building academic depth in financial mathematics, stochastic processes, regression analysis, risk theory,
+            investment, and data science through coursework and independent learning.
+          </p>
+        </div>
+        <span class="research-badge badge-competition">Focus Area</span>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- SKILLS -->
+  <section id="skills">
+    <div class="section-header reveal">
+      <span class="section-num">04</span>
+      <h2 class="section-title">Skills</h2>
+      <div class="section-line"></div>
+    </div>
+    <div class="skills-grid reveal">
+
+      <div class="skill-group">
+        <div class="skill-group-label">Technical</div>
+        <div class="skill-items">
+          <div class="skill-item">
+            <span class="skill-name">Python</span>
+            <div class="skill-bar-wrap"><div class="skill-bar" style="width:75%"></div></div>
+          </div>
+          <div class="skill-item">
+            <span class="skill-name">R Programming</span>
+            <div class="skill-bar-wrap"><div class="skill-bar" style="width:70%"></div></div>
+          </div>
+          <div class="skill-item">
+            <span class="skill-name">Microsoft Excel</span>
+            <div class="skill-bar-wrap"><div class="skill-bar" style="width:80%"></div></div>
+          </div>
+          <div class="skill-item">
+            <span class="skill-name">Pandas / Data Cleaning</span>
+            <div class="skill-bar-wrap"><div class="skill-bar" style="width:65%"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="skill-group">
+        <div class="skill-group-label">Quantitative</div>
+        <div class="skill-items">
+          <div class="skill-item">
+            <span class="skill-name">Financial Modeling</span>
+            <div class="skill-bar-wrap"><div class="skill-bar" style="width:70%"></div></div>
+          </div>
+          <div class="skill-item">
+            <span class="skill-name">Statistical Analysis</span>
+            <div class="skill-bar-wrap"><div class="skill-bar" style="width:80%"></div></div>
+          </div>
+          <div class="skill-item">
+            <span class="skill-name">Stochastic Processes</span>
+            <div class="skill-bar-wrap"><div class="skill-bar" style="width:65%"></div></div>
+          </div>
+          <div class="skill-item">
+            <span class="skill-name">Risk Theory</span>
+            <div class="skill-bar-wrap"><div class="skill-bar" style="width:60%"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="skill-group">
+        <div class="skill-group-label">Domain Knowledge</div>
+        <div class="skill-items">
+          <div class="skill-item">
+            <span class="skill-name">Investment Analysis</span>
+            <div class="skill-bar-wrap"><div class="skill-bar" style="width:70%"></div></div>
+          </div>
+          <div class="skill-item">
+            <span class="skill-name">Macroeconomics</span>
+            <div class="skill-bar-wrap"><div class="skill-bar" style="width:72%"></div></div>
+          </div>
+          <div class="skill-item">
+            <span class="skill-name">Data Analysis</span>
+            <div class="skill-bar-wrap"><div class="skill-bar" style="width:78%"></div></div>
+          </div>
+          <div class="skill-item">
+            <span class="skill-name">Regression Analysis</span>
+            <div class="skill-bar-wrap"><div class="skill-bar" style="width:75%"></div></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- CONTACT -->
+  <section id="contact">
+    <div class="contact-inner reveal">
+      <h2 class="contact-heading">Let's<br><span>work together.</span></h2>
+      <p class="contact-sub">
+        Currently seeking internship and entry-level opportunities in quantitative finance,
+        financial analysis, and data-driven roles. Open to conversations — feel free to reach out.
+      </p>
+      <div class="contact-links">
+        <a href="mailto:nicholas.1010107@gmail.com" class="contact-link">
+          ✉ Email
+        </a>
+        <a href="https://www.linkedin.com/in/nicholasrk" target="_blank" class="contact-link">
+          ↗ LinkedIn
+        </a>
+        <a href="https://github.com/nicholasrk" target="_blank" class="contact-link">
+          ↗ GitHub
+        </a>
+        <a href="MAKRO_template_EKOMA.docx" target="_blank" class="contact-link">
+          ↗ Macro Paper
+        </a>
+        <a href="Final Paper LSTM Portofolio Optimization.pdf" target="_blank" class="contact-link">
+          ↗ LSTM Paper
+        </a>
+        <a href="Nicholas Reynard Kusuma (RESUME).pdf" target="_blank" class="contact-link">
+          ↓ Resume
+        </a>
+        <a href="Paper SEC Satria Data 2025.pdf" target="_blank" class="contact-link">
+          ↓ Essay Paper
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    <span class="footer-name">Nicholas Reynard Kusuma</span>
+    <span class="footer-copy">© 2026 — Jakarta, Indonesia</span>
+  </footer>
+
+  <script>
+    // Navbar scroll effect
+    const navbar = document.getElementById('navbar');
+    window.addEventListener('scroll', () => {
+      navbar.classList.toggle('scrolled', window.scrollY > 40);
+    });
+
+    // Scroll reveal
+    const reveals = document.querySelectorAll('.reveal');
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry, i) => {
+        if (entry.isIntersecting) {
+          setTimeout(() => entry.target.classList.add('visible'), i * 80);
+          observer.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.1 });
+    reveals.forEach(el => observer.observe(el));
+  </script>
+
+</body>
+</html>
