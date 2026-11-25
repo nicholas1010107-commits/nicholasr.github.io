@@ -1,0 +1,750 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Sky Galley 3D</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --sky: #4fb3ff; --sky2: #bfe6ff; --cabin: #fff4e2; --seat: #3b6fe0; --seat2: #2a55b8;
+    --wood: #d4925a; --wood2: #b0733f; --steel: #e3ebf3; --steel2: #c4d1de;
+    --ink: #2b2f4a; --green: #3ccf6e; --yellow: #ffc83d; --red: #ff5a5a; --pop: #ff7a3d;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; overflow: hidden; }
+  body { font-family: "Fredoka", system-ui, sans-serif; color: var(--ink); background: var(--cabin);
+    display: grid; grid-template-rows: auto auto 1fr auto; height: 100dvh; user-select: none; touch-action: none; }
+  button { font-family: inherit; color: inherit; }
+  .chunk { border: 0; border-radius: 18px; font: 700 18px "Fredoka", sans-serif; color: #fff; cursor: pointer;
+    background: var(--pop); box-shadow: 0 6px 0 #c9541f; padding: 14px 26px; transition: transform .06s, box-shadow .06s; }
+  .chunk:active { transform: translateY(4px); box-shadow: 0 2px 0 #c9541f; }
+  .chunk.blue { background: var(--seat); box-shadow: 0 6px 0 var(--seat2); }
+
+  #top { background: var(--sky); color: #fff; display: flex; align-items: center; gap: 10px; padding: 8px 12px;
+    padding-top: max(8px, env(safe-area-inset-top)); z-index: 3; }
+  .pill { background: rgba(255,255,255,.25); border-radius: 999px; padding: 5px 12px; font-weight: 700; font-size: 17px; white-space: nowrap; border: 0; color: #fff; }
+  button.pill { cursor: pointer; }
+  #route { flex: 1; height: 8px; border-radius: 8px; position: relative; min-width: 40px;
+    background: repeating-linear-gradient(90deg, rgba(255,255,255,.9) 0 10px, transparent 10px 18px); }
+  #plane { position: absolute; top: 50%; transform: translate(-50%, -50%); font-size: 24px; left: 0; }
+  #route::after { content: "🏁"; position: absolute; right: -6px; top: 50%; transform: translateY(-55%); font-size: 16px; }
+
+  #map { background: var(--sky); padding: 0 12px 14px; box-shadow: 0 4px 0 #2f8fe0; z-index: 2; }
+  #fuse { position: relative; display: flex; gap: 4px; background: #fff; border-radius: 14px 48px 48px 14px; padding: 5px 30px 5px 5px; }
+  #fuse::after { content: ""; position: absolute; right: 10px; top: 50%; width: 14px; height: 10px; border-radius: 0 10px 10px 0;
+    background: var(--sky2); transform: translateY(-50%); }
+  .rm { flex: 1; position: relative; border: 0; border-radius: 10px; padding: 6px 4px; cursor: pointer; background: #eef3f9;
+    font: 600 13px "Fredoka", sans-serif; display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 0; }
+  .rm .ic { font-size: 18px; line-height: 1; }
+  .rm.here { background: #ffe9c2; box-shadow: inset 0 0 0 3px var(--pop); }
+  .rm.locked { opacity: .35; cursor: default; }
+  .rm .badge { position: absolute; top: -6px; right: -2px; min-width: 22px; height: 22px; border-radius: 11px; background: var(--green);
+    color: #fff; font-size: 12px; display: grid; place-items: center; padding: 0 5px; box-shadow: 0 2px 0 rgba(0,0,0,.15); }
+  .rm .badge:empty { display: none; }
+  .rm .badge.hot { background: var(--red); animation: pulse .6s ease-in-out infinite; }
+  @keyframes pulse { 50% { transform: scale(1.18); } }
+  #me { position: absolute; bottom: -14px; font-size: 22px; transform: translateX(-50%); pointer-events: none; }
+
+  /* ---------- 3D view ---------- */
+  #view { position: relative; overflow: hidden; }
+  #gl { position: absolute; inset: 0; width: 100%; height: 100%; display: block; cursor: grab; }
+  #cross { position: absolute; left: 50%; top: 50%; width: 6px; height: 6px; margin: -3px; border-radius: 50%; background: rgba(43,47,74,.35); pointer-events: none; }
+  #moveBtns { position: absolute; right: 14px; bottom: 14px; display: flex; flex-direction: column; gap: 10px; z-index: 2; }
+  #moveBtns button { width: 64px; height: 64px; border-radius: 50%; border: 0; font-size: 26px; color: #fff;
+    background: rgba(59,111,224,.85); box-shadow: 0 5px 0 var(--seat2); cursor: pointer; }
+  #moveBtns button:active { transform: translateY(3px); box-shadow: 0 2px 0 var(--seat2); }
+  #help { position: absolute; left: 12px; top: 10px; background: rgba(255,255,255,.88); border-radius: 12px; padding: 8px 12px;
+    font-size: 13px; font-weight: 600; line-height: 1.35; z-index: 2; pointer-events: none; transition: opacity 1s; }
+  #toast { position: absolute; left: 50%; top: 40%; transform: translate(-50%, -50%); background: rgba(43,47,74,.85); color: #fff;
+    border-radius: 14px; padding: 10px 16px; font-weight: 600; opacity: 0; transition: opacity .2s; pointer-events: none; z-index: 3; }
+  #toast.on { opacity: 1; }
+  .float { position: absolute; transform: translate(-50%, -50%); font-weight: 700; font-size: 22px; color: #e39b00;
+    text-shadow: 0 2px 0 #fff; animation: rise 1s ease-out forwards; pointer-events: none; white-space: nowrap; z-index: 3; }
+  @keyframes rise { to { transform: translate(-50%, -110%); opacity: 0; } }
+
+  /* galley sheet: slides up over the 3D view while you stand in the galley */
+  #galleyPanel { position: absolute; left: 0; right: 0; bottom: 0; max-height: 60%; overflow-y: auto; z-index: 2;
+    background: rgba(227, 235, 243, .97); border-radius: 22px 22px 0 0; box-shadow: 0 -6px 0 rgba(0,0,0,.06);
+    transform: translateY(105%); transition: transform .3s ease; }
+  #galleyPanel.on { transform: none; }
+  .galley { padding: 12px 12px 14px; display: flex; flex-direction: column; gap: 8px; align-items: center; }
+  .galley h4 { font-size: 12px; opacity: .55; font-weight: 600; letter-spacing: .05em; }
+  .grid { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+  .st { position: relative; width: 84px; min-height: 80px; border-radius: 16px; border: 0; cursor: pointer;
+    background: #fff; box-shadow: 0 5px 0 var(--steel2); display: flex; flex-direction: column; align-items: center; justify-content: center;
+    font: 600 11px "Fredoka", sans-serif; gap: 3px; text-align: center; padding: 4px; }
+  .st:active { transform: translateY(4px); box-shadow: 0 1px 0 var(--steel2); }
+  .st .ic { font-size: 32px; line-height: 1; }
+  .st .ring { position: absolute; top: 5px; right: 5px; width: 20px; height: 20px; border-radius: 50%; display: none;
+    background: conic-gradient(var(--c, var(--green)) calc(var(--p, 0) * 1turn), #e8edf2 0); }
+  .st.cook .ring, .st.ready .ring, .st.warn .ring { display: block; }
+  .st.cook .ic { animation: wobble .5s ease-in-out infinite; }
+  .st.ready { background: #eafff0; } .st.ready .ic { animation: bounce .6s ease-in-out infinite; }
+  .st.warn { background: #fff4d6; --c: var(--red); } .st.warn .ic { animation: bounce .25s ease-in-out infinite; }
+  .st.burnt { background: #ffe1e1; }
+  @keyframes wobble { 50% { transform: rotate(-8deg) scale(1.05); } }
+  @keyframes bounce { 50% { transform: translateY(-5px); } }
+  .ing { width: 48px; height: 48px; border-radius: 14px; border: 0; background: #fff; font-size: 26px; cursor: pointer; box-shadow: 0 4px 0 var(--steel2); }
+  .ing:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--steel2); }
+  .prep { display: flex; gap: 10px; align-items: center; background: #fff; border-radius: 20px; padding: 8px; box-shadow: 0 5px 0 var(--steel2); }
+  .tray { min-width: 140px; height: 58px; border-radius: 16px; background: #f4efe6; box-shadow: inset 0 3px 0 #e3dacb;
+    display: flex; align-items: center; justify-content: center; gap: 2px; font-size: 26px; padding: 0 10px; cursor: pointer; }
+  .tray:empty::after { content: "tray: tap ingredients"; font-size: 13px; opacity: .45; }
+  .load { min-width: 110px; padding: 12px 18px; }
+  .load.ok { background: var(--green); box-shadow: 0 6px 0 #27a453; }
+
+  #cartBar { background: var(--wood); box-shadow: inset 0 6px 0 var(--wood2); padding: 10px 12px max(10px, env(safe-area-inset-bottom));
+    display: flex; gap: 8px; align-items: center; justify-content: center; z-index: 3; }
+  #cartBar .lbl { color: #fff; font-weight: 700; font-size: 15px; display: flex; flex-direction: column; align-items: center; line-height: 1.1; }
+  #cartBar .lbl span { font-size: 26px; }
+  .slot { width: 52px; height: 52px; border-radius: 50%; background: #fff; box-shadow: inset 0 -5px 0 #e6e0d6, 0 3px 0 var(--wood2);
+    display: grid; place-items: center; font-size: 28px; cursor: pointer; border: 0; }
+  .slot:empty { opacity: .4; }
+  .hint { color: #fff; font-weight: 600; font-size: 13px; max-width: 130px; line-height: 1.15; opacity: .9; }
+  .shake { animation: shake .3s; }
+  @keyframes shake { 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
+  .popin { animation: popin .25s ease-out; }
+  @keyframes popin { from { transform: scale(.3); } }
+
+  .screen { position: fixed; inset: 0; z-index: 10; display: grid; place-items: center; padding: 16px; background: linear-gradient(var(--sky), var(--sky2)); overflow-y: auto; }
+  .screen[hidden] { display: none; }
+  .screen.dim { background: rgba(43, 47, 74, .5); }
+  .card { background: #fff; border-radius: 28px; padding: 24px 22px; text-align: center; max-width: 460px; width: 100%; box-shadow: 0 10px 0 rgba(0,0,0,.12); }
+  .card h1 { font-size: 42px; color: var(--seat); line-height: 1; margin: 6px 0 10px; }
+  .card h2 { font-size: 28px; margin-bottom: 6px; }
+  .card p, .card li { font-size: 16px; line-height: 1.45; opacity: .88; }
+  .card ul { text-align: left; margin: 10px 0 0 18px; }
+  .card .row2 { display: flex; gap: 12px; justify-content: center; margin-top: 18px; flex-wrap: wrap; }
+  .logo { font-size: 64px; animation: fly 2.5s ease-in-out infinite; display: inline-block; }
+  @keyframes fly { 50% { transform: translateY(-10px) rotate(-4deg); } }
+  .stars { font-size: 46px; letter-spacing: 6px; margin: 6px 0; }
+  .stars .off { filter: grayscale(1); opacity: .3; }
+  #unlock { background: #fff6d8; border-radius: 14px; padding: 10px; font-weight: 600; margin-top: 10px; }
+  #unlock:empty { display: none; }
+  .book { display: grid; grid-template-columns: auto 1fr auto; gap: 6px 10px; text-align: left; align-items: center; margin-top: 10px; max-height: 60vh; overflow-y: auto; }
+  .book .d { font-size: 28px; } .book .c { font-size: 22px; letter-spacing: 2px; } .book .pr { font-weight: 700; color: #e39b00; }
+  .book .lock { opacity: .3; }
+
+  @media (max-width: 640px) {
+    .st { width: 70px; min-height: 70px; } .st .ic { font-size: 26px; }
+    .ing { width: 40px; height: 40px; font-size: 22px; }
+    .slot { width: 42px; height: 42px; font-size: 22px; } .hint { display: none; }
+    .rm { font-size: 0; } .rm .ic { font-size: 18px; }
+    .pill { font-size: 14px; padding: 4px 9px; }
+    #moveBtns button { width: 56px; height: 56px; }
+  }
+</style>
+</head>
+<body>
+<div id="top">
+  <span class="pill" id="flightL">Flight 1</span>
+  <div id="route"><span id="plane">✈️</span></div>
+  <span class="pill" id="hearts"></span>
+  <span class="pill">🪙 <span id="coins">0</span></span>
+  <button class="pill" id="bookBtn" title="Recipe book">📖</button>
+</div>
+
+<div id="map"><div id="fuse"><span id="me">🧑‍✈️</span></div></div>
+
+<div id="view">
+  <canvas id="gl"></canvas>
+  <div id="cross"></div>
+  <div id="help">▲▼ / W S: walk · drag / A D: look around<br>Tap a passenger in your cabin to serve · tap the map to auto-walk</div>
+  <div id="toast"></div>
+  <div id="moveBtns"><button id="fwd">▲</button><button id="back">▼</button></div>
+  <div id="galleyPanel"></div>
+</div>
+
+<div id="cartBar">
+  <div class="lbl"><span>🛒</span>cart</div>
+  <span class="hint" id="cartHint">Tap a passenger to serve from the cart</span>
+</div>
+
+<div class="screen" id="menu">
+  <div class="card">
+    <div class="logo">✈️</div>
+    <h1>Sky Galley 3D</h1>
+    <p>You're the cabin crew, walking the aisle of a real plane.</p>
+    <ul>
+      <li>Cook in the <b>galley</b> at the back of the plane and load dishes onto your <b>cart</b>.</li>
+      <li>Walk forward down the aisle. Passengers sit on both sides; their order floats above their head.</li>
+      <li>Get close and tap a passenger to serve them.</li>
+      <li>Food keeps cooking (and burning!) while you're away. Angry passengers make their row angrier, and walk-outs cost ❤️.</li>
+    </ul>
+    <div class="row2"><button class="chunk" id="playBtn">Board the plane</button></div>
+  </div>
+</div>
+
+<div class="screen dim" id="result" hidden>
+  <div class="card">
+    <h2 id="resTitle">Landed!</h2>
+    <div class="stars" id="stars"></div>
+    <p id="resText"></p>
+    <div id="unlock"></div>
+    <div class="row2">
+      <button class="chunk blue" id="retryBtn">Retry</button>
+      <button class="chunk" id="nextBtn">Next flight</button>
+    </div>
+  </div>
+</div>
+
+<div class="screen dim" id="bookO" hidden>
+  <div class="card">
+    <h2>📖 Recipes</h2>
+    <p style="font-size:14px">Put exactly these on the tray, then tap Load. Hot items come from the cooking stations.</p>
+    <div class="book" id="book"></div>
+    <div class="row2"><button class="chunk blue" id="bookClose">Back to work</button></div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+const $ = id => document.getElementById(id);
+const rnd = (a, b) => a + Math.random() * (b - a);
+const pick = a => a[Math.floor(Math.random() * a.length)];
+const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
+const lerp = (a, b, t) => a + (b - a) * t;
+const store = {
+  get() { try { return JSON.parse(localStorage.getItem('skyGalley3d')) || { flight: 1 }; } catch { return { flight: 1 }; } },
+  set(v) { try { localStorage.setItem('skyGalley3d', JSON.stringify(v)); } catch {} }
+};
+
+// ================= game data (same rules as the 2D version) =================
+const ING = {
+  coffee:  { e: '☕', st: 'Coffee machine', dur: 3 },
+  tea:     { e: '🫖', st: 'Kettle', dur: 2.5 },
+  egg:     { e: '🍳', st: 'Pan', dur: 3, burn: 4 },
+  rice:    { e: '🍚', st: 'Rice cooker', dur: 4, burn: 7 },
+  chicken: { e: '🍗', st: 'Oven', dur: 5, burn: 6 },
+  bread: { e: '🍞' }, cheese: { e: '🧀' }, lettuce: { e: '🥬' }, tomato: { e: '🍅' }, bacon: { e: '🥓' },
+  juice: { e: '🧃' }, cola: { e: '🥫' }, milk: { e: '🥛' }, ice: { e: '🧊' },
+  cake: { e: '🍰' }, icecream: { e: '🍦' }, cherry: { e: '🍒' }, choc: { e: '🍫' },
+};
+const DISH = {
+  coffee:   { e: '☕', n: 'Coffee',         c: ['coffee'],                            p: 5,  from: 1, tier: 1 },
+  juice:    { e: '🧃', n: 'Juice',          c: ['juice'],                             p: 4,  from: 1, tier: 1 },
+  sandwich: { e: '🥪', n: 'Sandwich',       c: ['bread', 'cheese', 'lettuce'],        p: 9,  from: 1, tier: 2 },
+  tea:      { e: '🍵', n: 'Tea',            c: ['tea'],                               p: 5,  from: 2, tier: 1 },
+  cola:     { e: '🥤', n: 'Iced cola',      c: ['cola', 'ice'],                       p: 6,  from: 2, tier: 1 },
+  salad:    { e: '🥗', n: 'Salad',          c: ['lettuce', 'tomato', 'cheese'],       p: 9,  from: 2, tier: 2 },
+  milktea:  { e: '🧋', n: 'Iced milk tea',  c: ['tea', 'milk', 'ice'],                p: 10, from: 3, tier: 2 },
+  cake:     { e: '🍰', n: 'Cake',           c: ['cake'],                              p: 7,  from: 3, tier: 1 },
+  curry:    { e: '🍛', n: 'Chicken rice',   c: ['chicken', 'rice'],                   p: 16, from: 4, tier: 3 },
+  brunch:   { e: '🥐', n: 'Brunch plate',   c: ['egg', 'bacon', 'bread'],             p: 14, from: 4, tier: 3 },
+  sundae:   { e: '🍨', n: 'Sundae',         c: ['icecream', 'cherry', 'choc'],        p: 11, from: 5, tier: 2 },
+  wrap:     { e: '🌯', n: 'Chicken wrap',   c: ['chicken', 'lettuce', 'tomato'],      p: 15, from: 6, tier: 3 },
+  burger:   { e: '🍔', n: 'Chicken burger', c: ['bread', 'chicken', 'cheese', 'lettuce'], p: 18, from: 6, tier: 3 },
+  bento:    { e: '🍱', n: 'Bento',          c: ['rice', 'chicken', 'egg', 'lettuce'], p: 24, from: 7, tier: 4 },
+};
+// Rooms from back (+z) to front (−z). The camera looks toward −z (the nose).
+// rowZ = z of each seat row; xs = x of each seat in a row, left window → right window; edge = z of the
+// divider at the room's back edge (the room must be unlocked to walk past it); stand = where auto-walk stops,
+// just inside the back of the room so every row is in front of you.
+const ROOMS = [
+  { name: 'Galley',          ic: '🍳', from: 1, stand: 3.0 },
+  { name: 'Economy · rear',  ic: '💺', from: 1, stand: 1.25, edge: 1.5,  rowZ: [0, -1.1],    xs: [-1.4, -.8, .8, 1.4] },
+  { name: 'Economy · front', ic: '💺', from: 3, stand: -1.95, edge: -1.7, rowZ: [-3.1, -4.2], xs: [-1.4, -.8, .8, 1.4] },
+  { name: 'Business',        ic: '🥂', from: 5, stand: -5.15, edge: -4.9,  rowZ: [-6.4, -7.8], xs: [-1.15, 1.15], biz: true, pay: 2, pat: .75 },
+];
+const NOSE = -9.2, TAIL = 4.6, Z_MAX = 3.6, SPEED = 4;   // metres, metres/second
+const PAX = ['🧑', '👩', '👨', '👵', '👴', '🧔', '👩‍🦰', '👨‍🦱', '🧒', '👱‍♀️', '👲', '🧕', '👩‍🦳', '🤠', '👨‍💼', '👩‍💻'];
+const FLIGHT_SECS = 150, CART = 6, HEARTS = 5;
+
+// ---------- difficulty model ----------
+const diffAt = (f, t) => f + 1.5 * t / FLIGHT_SECS;
+const orderSize = (D, r1 = Math.random(), r2 = Math.random()) =>
+  1 + (r1 < Math.min(.6, .1 * (D - 1)) ? 1 + (r2 < clamp(.07 * (D - 3), 0, .5) ? 1 : 0) : 0);
+const dishWeight = (k, D) => DISH[k].tier ** Math.min(2, D / 4);
+const patienceFor = (D, tiers) => Math.max(20, 45 - 2.5 * D) + 5 * tiers;
+const grumpyP = D => clamp(.05 * (D - 1), 0, .35);
+const spawnGap = D => Math.max(1.6, 7 - .6 * D);
+const goalFor = f => 60 + 50 * (f - 1);
+const starsFor = (coins, f, hearts) => hearts <= 0 ? 0 :
+  coins >= 2 * goalFor(f) ? 3 : coins >= 1.5 * goalFor(f) ? 2 : coins >= goalFor(f) ? 1 : 0;
+const payFor = (order, ratio, mult = 1) => {
+  const base = order.reduce((s, k) => s + DISH[k].p, 0) * mult;
+  return ratio < .3 ? { total: Math.round(base * .7), angry: true } : { total: base + Math.round(base * .6 * ratio), angry: false };
+};
+const avail = f => Object.keys(DISH).filter(k => DISH[k].from <= f);
+const trayMakes = (tray, f) => avail(f).find(k => DISH[k].c.length === tray.length && DISH[k].c.every(i => tray.includes(i)));
+// which room a z position is in: the first seating room whose back divider is behind you
+const roomAt = z => { let r = 0; ROOMS.forEach((R, i) => { if (R.edge !== undefined && z < R.edge) r = i; }); return r; };
+
+// ---------- audio ----------
+let ac;
+function beep(f, d = .1, type = 'triangle', v = .08, slide = 0) {
+  try {
+    ac = ac || new AudioContext();
+    const o = ac.createOscillator(), g = ac.createGain(), t = ac.currentTime;
+    o.type = type; o.frequency.setValueAtTime(f, t);
+    if (slide) o.frequency.exponentialRampToValueAtTime(slide, t + d);
+    g.gain.setValueAtTime(v, t); g.gain.exponentialRampToValueAtTime(.0001, t + d);
+    o.connect(g).connect(ac.destination); o.start(t); o.stop(t + d);
+  } catch {}
+}
+const sfx = {
+  tap: () => beep(600, .05, 'sine', .06), ding: () => beep(1320, .2, 'sine', .08),
+  bell: () => { beep(1568, .12, 'sine', .05); setTimeout(() => beep(1175, .2, 'sine', .05), 120); },
+  coin: () => { beep(988, .08, 'square', .04); setTimeout(() => beep(1319, .15, 'square', .04), 70); },
+  bad: () => beep(160, .25, 'sawtooth', .05), angry: () => beep(220, .35, 'sawtooth', .06, 110),
+  storm: () => beep(300, .6, 'sawtooth', .08, 60),
+};
+
+// ================= 3D scene =================
+const canvas = $('gl');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0xfff4e2);
+scene.fog = new THREE.Fog(0xfff4e2, 7, 17);
+const camera = new THREE.PerspectiveCamera(72, 1, .05, 40);
+camera.rotation.order = 'YXZ';
+scene.add(new THREE.HemisphereLight(0xffffff, 0xd9c9ad, 1.0));
+const sun = new THREE.DirectionalLight(0xffffff, .35); sun.position.set(2, 4, 3); scene.add(sun);
+
+const mats = {};
+const mat = (c, basic) => mats[c + (basic ? 'b' : '')] ||= basic ? new THREE.MeshBasicMaterial({ color: c }) : new THREE.MeshLambertMaterial({ color: c });
+function box(w, h, d, c, x, y, z, basic) {
+  const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat(c, basic));
+  m.position.set(x, y, z); scene.add(m); return m;
+}
+
+// fuselage: an open cylinder seen from inside. Centre at y=1.3 with r=2.3 so the floor (y=0) is a chord
+// of half-width √(2.3² − 1.3²) ≈ 1.9 m, which is the cabin floor width.
+const LEN = TAIL - NOSE, MID = (TAIL + NOSE) / 2;
+const fus = new THREE.Mesh(new THREE.CylinderGeometry(2.3, 2.3, LEN, 40, 1, true),
+  new THREE.MeshLambertMaterial({ color: 0xf7efe2, side: THREE.BackSide }));
+fus.rotation.x = Math.PI / 2; fus.position.set(0, 1.3, MID); scene.add(fus);
+const floor = new THREE.Mesh(new THREE.PlaneGeometry(3.8, LEN), mat(0x9aa7c7));
+floor.rotation.x = -Math.PI / 2; floor.position.set(0, 0, MID); scene.add(floor);
+box(.8, .01, LEN, 0x5b6fa8, 0, .005, MID);                          // aisle carpet
+box(3.8, 3, .1, 0xe9dcc6, 0, 1.5, TAIL);                            // back wall
+box(3.8, 3, .1, 0xd8ccb6, 0, 1.5, NOSE); box(.8, 2, .12, 0x9a8f7d, 0, 1, NOSE + .02);   // cockpit wall + door
+for (const sx of [-1, 1]) {
+  box(.75, .45, NOSE - 1.2 - .2, 0xefe5d4, sx * 1.55, 2.45, (1.0 + NOSE + .2) / 2).rotation.z = sx * -.35;   // overhead bins
+  box(.08, .02, LEN - 1, 0xffffff, sx * .55, 3.25, MID, true);      // ceiling light strips
+}
+// windows along both walls, one per metre
+for (let z = NOSE + .8; z < 1; z += 1.05) for (const sx of [-1, 1]) {
+  const w = new THREE.Mesh(new THREE.PlaneGeometry(.28, .4), mat(0x8fd3ff, true));
+  w.position.set(sx * 2.17, 1.4, z); w.rotation.y = -sx * Math.PI / 2; scene.add(w);
+}
+// galley counters at the back
+box(.7, 1, 2.6, 0xd6dee8, -1.5, .5, 3.1); box(.7, 1, 2.6, 0xd6dee8, 1.5, .5, 3.1); box(2.3, 1, .6, 0xc4d1de, 0, .5, 4.2);
+box(.72, .04, 2.6, 0xaab8c8, -1.5, 1.02, 3.1); box(.72, .04, 2.6, 0xaab8c8, 1.5, 1.02, 3.1);
+
+// emoji → texture (cached). Sprites always face the camera.
+const texCache = {};
+function emojiTex(e) {
+  if (texCache[e]) return texCache[e];
+  const c = document.createElement('canvas'); c.width = c.height = 128;
+  const g = c.getContext('2d');
+  g.font = '100px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif';
+  g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(e, 64, 72);
+  return texCache[e] = new THREE.CanvasTexture(c);
+}
+function sprite(e, size) {
+  const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: emojiTex(e), transparent: true }));
+  s.scale.set(size, size, 1); scene.add(s); return s;
+}
+// station sprites on the galley counters show live state (cooking / ready / 🔥)
+const stationSprites = {};
+['coffee', 'tea', 'egg', 'rice', 'chicken'].forEach((k, i) => {
+  const s = sprite(ING[k].e, .38);
+  s.position.set(i % 2 ? 1.45 : -1.45, 1.25, 2.2 + Math.floor(i / 2) * .8);
+  stationSprites[k] = s;
+});
+
+// seats + per-seat passenger sprite + order-bubble sprite (canvas texture redrawn when it changes)
+const seatObjs = ROOMS.map((R, r) => {
+  if (!R.rowZ) return [];
+  const out = [];
+  R.rowZ.forEach(z => R.xs.forEach(x => {
+    const w = R.biz ? .85 : .52, col = R.biz ? 0xb8742f : 0x3b6fe0, dark = R.biz ? 0x8f5520 : 0x2a55b8;
+    box(w, .14, .5, dark, x, .45, z);                // cushion
+    box(w, .8, .12, col, x, .87, z + .28);           // seat back (faces the nose)
+    box(w * .7, .16, .13, 0xffffff, x, 1.18, z + .28);   // headrest cover
+    box(.06, .22, .45, dark, x - w / 2, .62, z); box(.06, .22, .45, dark, x + w / 2, .62, z);   // armrests
+    const face = sprite('🧑', .55); face.position.set(x, 1.28, z + .06); face.visible = false;
+    const bc = document.createElement('canvas'); bc.width = 256; bc.height = 168;
+    const bt = new THREE.CanvasTexture(bc);
+    const bubble = new THREE.Sprite(new THREE.SpriteMaterial({ map: bt, transparent: true, depthTest: false }));
+    bubble.scale.set(.72, .47, 1); bubble.position.set(x, 1.92, z); bubble.visible = false; bubble.renderOrder = 2; scene.add(bubble);
+    const s = out.length;
+    face.userData = bubble.userData = { r, s };
+    out.push({ face, bubble, bc, bt, base: face.position.clone(), z, shake: 0, drawn: null });
+  }));
+  // dividers at the back edge of the room + a locked curtain across the aisle
+  for (const sx of [-1, 1]) box(1.45, 1.25, .06, 0xe2d4bc, sx * 1.2, .625, R.edge);   // low partitions, so you can see over them
+  R.curtain = box(.82, 2.3, .04, 0x8a3b5a, 0, 1.15, R.edge);
+  return out;
+});
+const pickables = seatObjs.flat().flatMap(o => [o.face, o.bubble]);
+
+function drawBubble(o, p) {
+  const ratio = clamp(p.pat / p.max, 0, 1), key = p.left.join() + p.mood + Math.round(ratio * 40);
+  if (o.drawn === key) return;           // only redraw when something visible changed
+  o.drawn = key;
+  const g = o.bc.getContext('2d'), W = 256, H = 168;
+  g.clearRect(0, 0, W, H);
+  g.fillStyle = '#fff'; g.strokeStyle = p.mood === 2 ? '#ff5a5a' : '#ffffff'; g.lineWidth = 10;
+  g.beginPath(); g.roundRect ? g.roundRect(8, 8, W - 16, 120, 30) : g.rect(8, 8, W - 16, 120); g.fill(); g.stroke();
+  g.beginPath(); g.moveTo(W / 2 - 16, 126); g.lineTo(W / 2, 150); g.lineTo(W / 2 + 16, 126); g.fill();
+  g.font = '62px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif';
+  g.textAlign = 'center'; g.textBaseline = 'middle';
+  const n = p.left.length, step = Math.min(72, 200 / n);
+  p.left.forEach((k, i) => g.fillText(DISH[k].e, W / 2 + (i - (n - 1) / 2) * step, 62));
+  g.fillStyle = 'rgba(0,0,0,.15)'; g.fillRect(36, 104, W - 72, 14);
+  g.fillStyle = ['#3ccf6e', '#ffc83d', '#ff5a5a'][p.mood]; g.fillRect(36, 104, (W - 72) * ratio, 14);
+  if (p.mood || p.grumpy) { g.font = '44px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif'; g.fillText(['😤', '😐', '😠'][p.mood], W - 34, 30); }
+  o.bt.needsUpdate = true;
+}
+
+function resize() {
+  const r = $('view').getBoundingClientRect();
+  renderer.setSize(r.width, r.height, false);
+  camera.aspect = r.width / r.height;
+  // keep at least ±36° of horizontal view so both window seats stay in frame on narrow screens:
+  // tan(hfov/2) = aspect · tan(vfov/2)  ⇒  vfov = 2·atan(tan 36° / aspect), kept between 72° and 105°
+  camera.fov = clamp(2 * Math.atan(Math.tan(36 * Math.PI / 180) / camera.aspect) * 180 / Math.PI, 72, 105);
+  camera.updateProjectionMatrix();
+}
+new ResizeObserver(resize).observe($('view'));
+
+// ================= state =================
+let G = null, save = store.get();
+const open = r => ROOMS[r].from <= G.f;
+const perRow = r => ROOMS[r].xs.length;
+const rowOf = (r, s) => Math.floor(s / perRow(r));
+const minZ = () => { const lock = ROOMS.find(R => R.edge !== undefined && !open(ROOMS.indexOf(R))); return lock ? lock.edge + .45 : NOSE + .7; };
+
+// ---------- plane map ----------
+const roomBtns = ROOMS.map((R, r) => {
+  const b = document.createElement('button'); b.className = 'rm';
+  b.innerHTML = `<span class="ic">${R.ic}</span>${R.name}<span class="badge"></span>`;
+  b.addEventListener('pointerdown', () => { if (G && open(r)) G.target = ROOMS[r].stand; });
+  $('fuse').insertBefore(b, $('me')); return b;
+});
+function placeMe() {
+  // map marker: piecewise-linear between room "stand" points ↔ room button centres
+  const cs = roomBtns.map(b => b.offsetLeft + b.offsetWidth / 2), zs = ROOMS.map(R => R.stand), z = G.z;
+  let x = z >= zs[0] ? cs[0] : cs[cs.length - 1];
+  for (let i = 0; i < zs.length - 1; i++) if (z <= zs[i] && z >= zs[i + 1]) x = lerp(cs[i], cs[i + 1], (zs[i] - z) / (zs[i] - zs[i + 1]));
+  $('me').style.left = x + 'px';
+}
+
+// ---------- seats ----------
+function renderSeat(r, s) {
+  const o = seatObjs[r][s], p = G.seats[r][s];
+  o.face.visible = !!p; o.bubble.visible = !!p && !p.gone;
+  if (!p) return;
+  o.face.material.map = emojiTex(p.face); o.face.material.needsUpdate = true;
+  o.drawn = null; if (!p.gone) drawBubble(o, p);
+}
+
+// ---------- galley sheet ----------
+function renderGalley() {
+  const panel = $('galleyPanel'), a = avail(G.f);
+  const need = [...new Set(a.flatMap(k => DISH[k].c))];
+  const timed = need.filter(i => ING[i].dur), cold = need.filter(i => !ING[i].dur);
+  panel.innerHTML = '<div class="galley"><h4>COOKING STATIONS</h4><div class="grid" id="stations"></div><h4>INGREDIENTS</h4><div class="grid" id="ings"></div>' +
+    '<div class="prep"><div class="tray" id="tray" title="Tap to clear"></div><button class="chunk load" id="loadBtn">Load ✓</button></div></div>';
+  for (const i of timed) {
+    const b = document.createElement('button'); b.className = 'st';
+    b.innerHTML = `<span class="ring"></span><span class="ic">${ING[i].e}</span>${ING[i].st}`;
+    b.addEventListener('pointerdown', () => tapStation(i));
+    $('stations').appendChild(b); G.st[i].el = b;
+  }
+  for (const i of cold) {
+    const b = document.createElement('button'); b.className = 'ing'; b.textContent = ING[i].e;
+    b.addEventListener('pointerdown', () => addIng(i, b));
+    $('ings').appendChild(b);
+  }
+  $('tray').addEventListener('pointerdown', () => { G.tray = []; renderTray(); sfx.tap(); });
+  $('loadBtn').addEventListener('pointerdown', loadTray);
+  renderTray(); drawStations();
+}
+function addIng(i, el) {
+  if (G.tray.includes(i) || G.tray.length >= 5) return shake(el || $('tray'));
+  G.tray.push(i); sfx.tap(); renderTray();
+}
+function tapStation(i) {
+  const s = G.st[i];
+  if (s.state === 'idle') { s.state = 'cook'; s.t = 0; sfx.tap(); }
+  else if (s.state === 'ready' || s.state === 'warn') {
+    if (G.tray.includes(i) || G.tray.length >= 5) return shake(s.el);
+    G.tray.push(i); s.state = 'idle'; sfx.tap(); renderTray();
+  } else if (s.state === 'burnt') { s.state = 'idle'; sfx.tap(); }
+  else shake(s.el);
+  drawStations();
+}
+function loadTray() {
+  const k = trayMakes(G.tray, G.f);
+  if (!k || G.cart.length >= CART) return shake($('loadBtn'));
+  G.cart.push(k); G.tray = []; sfx.ding(); renderTray(); renderCart(true);
+}
+function renderTray() {
+  if (!$('tray')) return;
+  $('tray').textContent = G.tray.map(i => ING[i].e).join('');
+  const k = trayMakes(G.tray, G.f);
+  $('loadBtn').textContent = k ? `Load ${DISH[k].e}` : 'Load ✓';
+  $('loadBtn').classList.toggle('ok', !!k);
+}
+function drawStations() {
+  for (const [i, s] of Object.entries(G.st)) {
+    const T = ING[i], spr = stationSprites[i];
+    spr.visible = avail(G.f).some(k => DISH[k].c.includes(i));
+    spr.material.map = emojiTex(s.state === 'burnt' ? '🔥' : T.e);
+    spr.scale.setScalar(s.state === 'ready' || s.state === 'warn' ? .38 + Math.abs(Math.sin(performance.now() / 150)) * .08 : .38);
+    if (!s.el || !s.el.isConnected) continue;
+    s.el.className = 'st ' + s.state;
+    s.el.querySelector('.ic').textContent = s.state === 'burnt' ? '🔥' : T.e;
+    s.el.style.setProperty('--p', s.state === 'cook' ? s.t / T.dur : T.burn ? 1 - s.t / T.burn : 1);
+  }
+}
+
+// ---------- cart ----------
+const slotEls = Array.from({ length: CART }, (_, i) => {
+  const b = document.createElement('button'); b.className = 'slot';
+  b.addEventListener('pointerdown', () => { if (G && G.room === 0 && G.cart[i]) { G.cart.splice(i, 1); renderCart(); sfx.tap(); } });
+  $('cartBar').insertBefore(b, $('cartHint')); return b;
+});
+function renderCart(popLast) {
+  slotEls.forEach((el, i) => {
+    el.textContent = G.cart[i] ? DISH[G.cart[i]].e : '';
+    el.classList.toggle('popin', !!popLast && i === G.cart.length - 1);
+  });
+  $('cartHint').textContent = G.room === 0 ? 'Tap a cart dish to bin it' : 'Tap a passenger to serve from the cart';
+}
+
+// ---------- passengers ----------
+function makeOrder(D) {
+  const pool = avail(G.f), n = orderSize(D);
+  const total = pool.reduce((s, k) => s + dishWeight(k, D), 0);
+  return Array.from({ length: n }, () => { let r = Math.random() * total; return pool.find(k => (r -= dishWeight(k, D)) < 0) || pool[0]; });
+}
+function spawn() {
+  const empty = [];
+  G.seats.forEach((arr, r) => open(r) && arr.forEach((p, s) => !p && empty.push([r, s])));
+  if (!empty.length) return;
+  const [r, s] = pick(empty), D = diffAt(G.f, G.time), order = makeOrder(D);
+  const tiers = order.reduce((a, k) => a + DISH[k].tier, 0);
+  const grumpy = Math.random() < grumpyP(D);
+  const max = patienceFor(D, tiers) * (ROOMS[r].pat || 1) * (grumpy ? .65 : 1);
+  G.seats[r][s] = { face: pick(PAX), order, left: [...order], pat: max, max, grumpy, mood: 0 };
+  renderSeat(r, s); sfx.bell();
+}
+function serveSeat(r, s) {
+  const p = G.seats[r][s], o = seatObjs[r][s];
+  if (!p || p.gone || G.over) return;
+  if (roomAt(G.z) !== r) return toast(`Walk to ${ROOMS[r].name} to serve`);
+  let gave = 0;
+  for (const k of [...p.left]) {
+    const i = G.cart.indexOf(k);
+    if (i >= 0) { G.cart.splice(i, 1); p.left.splice(p.left.indexOf(k), 1); gave++; }
+  }
+  if (!gave) { o.shake = .3; sfx.bad(); return toast(G.cart.length ? 'Nothing on the cart they ordered' : 'Cart is empty: go to the galley'); }
+  renderCart();
+  if (!p.left.length) {
+    const { total, angry } = payFor(p.order, p.pat / p.max, ROOMS[r].pay || 1);
+    G.coins += total; G.served++; sfx.coin();
+    floatAt(o.bubble.position, `+${total}` + (angry ? ' 😒' : ' 💖'));
+    leave(r, s, angry ? '😒' : '😋');
+  } else { sfx.ding(); o.drawn = null; drawBubble(o, p); }
+}
+function leave(r, s, face) {
+  const p = G.seats[r][s]; p.gone = true; p.face = face; renderSeat(r, s);
+  setTimeout(() => { if (G && G.seats[r][s] === p) { G.seats[r][s] = null; renderSeat(r, s); } }, 900);
+}
+
+// ---------- helpers ----------
+function shake(el) { if (!el) return; el.classList.remove('shake'); void el.offsetWidth; el.classList.add('shake'); sfx.bad(); }
+let toastT;
+function toast(msg) { $('toast').textContent = msg; $('toast').classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => $('toast').classList.remove('on'), 1200); }
+function floatAt(pos, txt) {
+  const v = pos.clone().project(camera), r = canvas.getBoundingClientRect();
+  const d = document.createElement('div'); d.className = 'float'; d.textContent = txt;
+  d.style.left = (v.x + 1) / 2 * r.width + 'px'; d.style.top = (1 - v.y) / 2 * r.height + 'px';
+  $('view').appendChild(d); setTimeout(() => d.remove(), 1000);
+}
+function renderHearts() { const h = Math.max(0, G.hearts); $('hearts').textContent = '❤️'.repeat(h) + '🤍'.repeat(HEARTS - h); }
+
+// ================= input: walk, look, tap =================
+const keys = {};
+addEventListener('keydown', e => { keys[e.key.toLowerCase()] = true; if (G) G.target = null; });
+addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
+const hold = (id, k) => {
+  const b = $(id);
+  b.addEventListener('pointerdown', e => { e.preventDefault(); keys[k] = true; if (G) G.target = null; });
+  for (const ev of ['pointerup', 'pointerleave', 'pointercancel']) b.addEventListener(ev, () => keys[k] = false);
+};
+hold('fwd', 'arrowup'); hold('back', 'arrowdown');
+let drag = null;
+canvas.addEventListener('pointerdown', e => { drag = { x: e.clientX, y: e.clientY, moved: 0 }; canvas.setPointerCapture(e.pointerId); });
+canvas.addEventListener('pointermove', e => {
+  if (!drag || !G) return;
+  const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+  drag.moved += Math.abs(dx) + Math.abs(dy); drag.x = e.clientX; drag.y = e.clientY;
+  G.yaw -= dx * .005; G.pitch = clamp(G.pitch - dy * .004, -.6, .4);
+});
+canvas.addEventListener('pointerup', e => {
+  if (drag && drag.moved < 8 && G && !G.over) tapScene(e);   // a tap, not a drag
+  drag = null;
+});
+const ray = new THREE.Raycaster();
+function tapScene(e) {
+  const r = canvas.getBoundingClientRect();
+  ray.setFromCamera({ x: (e.clientX - r.left) / r.width * 2 - 1, y: -(e.clientY - r.top) / r.height * 2 + 1 }, camera);
+  const hit = ray.intersectObjects(pickables.filter(o => o.visible))[0];
+  if (hit) serveSeat(hit.object.userData.r, hit.object.userData.s);
+}
+
+// ================= flight =================
+function startFlight(f) {
+  G = { f, time: 0, coins: 0, served: 0, lost: 0, hearts: HEARTS, room: -1, cart: [], tray: [], spawnT: 1.5,
+        z: ROOMS[0].stand, yaw: 0, pitch: -.12, target: null, bob: 0,
+        seats: ROOMS.map(R => R.rowZ ? Array(R.rowZ.length * R.xs.length).fill(null) : []), st: {} };
+  for (const i of Object.keys(ING)) if (ING[i].dur) G.st[i] = { state: 'idle', t: 0 };
+  ROOMS.forEach((R, r) => { if (R.curtain) R.curtain.visible = !open(r); });
+  seatObjs.forEach((arr, r) => arr.forEach((_, s) => renderSeat(r, s)));
+  roomBtns.forEach((b, r) => b.classList.toggle('locked', !open(r)));
+  $('flightL').textContent = `Flight ${f}`;
+  renderCart(); renderHearts(); renderGalley();
+  $('menu').hidden = true; $('result').hidden = true;
+  setTimeout(() => $('help').style.opacity = 0, 9000);
+  last = performance.now();
+}
+
+function move(dt) {
+  let v = (keys.w || keys.arrowup ? 1 : 0) - (keys.s || keys.arrowdown ? 1 : 0);
+  if (keys.a || keys.arrowleft) G.yaw += dt * 1.8;
+  if (keys.d || keys.arrowright) G.yaw -= dt * 1.8;
+  if (G.target !== null) {                     // auto-walk from the map, facing the way you go
+    const d = G.target - G.z;
+    if (Math.abs(d) < .05) G.target = null; else { v = d < 0 ? 1 : -1; G.yaw = lerp(G.yaw, 0, Math.min(1, dt * 4)); }
+  }
+  // forward = toward −z, rotated by yaw; we only walk along the aisle, so use the z component
+  const step = v * SPEED * dt * (G.target !== null ? 1 : Math.cos(G.yaw) >= 0 ? 1 : -1);
+  G.z = clamp(G.z - step, minZ(), Z_MAX);
+  G.bob = v ? G.bob + dt * 9 : 0;
+  // the camera sits slightly behind you (more on portrait) so the nearest row isn't out of frame
+  const back = camera.aspect < 1 ? 1.0 : .35;
+  camera.position.set(0, 1.68 + Math.sin(G.bob) * .025, Math.min(TAIL - .3, G.z + back));
+  camera.rotation.set(G.pitch, G.yaw, 0);
+  const r = roomAt(G.z);
+  if (r !== G.room) {
+    G.room = r;
+    roomBtns.forEach((b, i) => b.classList.toggle('here', i === r));
+    $('galleyPanel').classList.toggle('on', r === 0);
+    renderCart();
+  }
+  placeMe();
+}
+
+function tick(dt) {
+  G.time += dt;
+  const D = diffAt(G.f, G.time);
+  const cabins = ROOMS.filter((_, r) => r && open(r)).length;
+  G.spawnT -= dt;
+  if (G.spawnT <= 0 && G.time < FLIGHT_SECS - 15) { spawn(); G.spawnT = spawnGap(D) / (1 + .35 * (cabins - 1)) * rnd(.6, 1.4); }
+
+  G.seats.forEach((arr, r) => arr.forEach((p, s) => {
+    const o = seatObjs[r][s];
+    if (o.shake > 0) { o.shake -= dt; o.face.position.x = o.base.x + Math.sin(o.shake * 80) * .04; }
+    if (!p || p.gone || G.over) return;
+    const angryRow = arr.some((q, j) => j !== s && q && !q.gone && q.mood === 2 && rowOf(r, j) === rowOf(r, s));
+    p.pat -= dt * (angryRow ? 1.5 : 1);           // anger spreads along the row
+    const ratio = Math.max(0, p.pat / p.max), mood = ratio > .6 ? 0 : ratio > .3 ? 1 : 2;
+    if (mood !== p.mood) { p.mood = mood; if (mood === 2) sfx.angry(); }
+    drawBubble(o, p);
+    o.face.position.x = o.base.x + (mood === 2 ? Math.sin(G.time * 40) * .02 : 0);   // angry passengers fidget
+    if (p.pat <= 0) {
+      G.lost++; G.hearts--; renderHearts(); sfx.storm(); leave(r, s, '🤬');
+      if (G.hearts <= 0) land();
+    }
+  }));
+
+  for (const [i, s] of Object.entries(G.st)) {
+    const T = ING[i];
+    if (s.state === 'cook') { s.t += dt; if (s.t >= T.dur) { s.state = 'ready'; s.t = 0; sfx.ding(); } }
+    else if ((s.state === 'ready' || s.state === 'warn') && T.burn) {
+      s.t += dt;
+      if (s.t >= T.burn * .5) s.state = 'warn';
+      if (s.t >= T.burn) { s.state = 'burnt'; sfx.bad(); }
+    }
+  }
+  drawStations();
+
+  roomBtns.forEach((b, r) => {
+    const badge = b.querySelector('.badge');
+    if (r === 0) {
+      const st = Object.values(G.st);
+      badge.textContent = st.some(s => s.state === 'warn' || s.state === 'burnt') ? '🔥' : st.some(s => s.state === 'ready') ? '✓' : '';
+      badge.classList.toggle('hot', badge.textContent === '🔥');
+    } else {
+      const ps = G.seats[r].filter(p => p && !p.gone);
+      badge.textContent = ps.length || '';
+      badge.classList.toggle('hot', ps.some(p => p.mood === 2));
+    }
+  });
+  $('coins').textContent = G.coins;
+  $('plane').style.left = Math.min(100, G.time / FLIGHT_SECS * 100) + '%';
+  if (G.time >= FLIGHT_SECS) land();
+}
+
+function land() {
+  if (G.over) return;
+  G.over = true;
+  const f = G.f, stars = starsFor(G.coins, f, G.hearts);
+  $('resTitle').textContent = G.hearts <= 0 ? 'Emergency landing!' : stars ? 'Smooth landing!' : 'Bumpy landing…';
+  $('stars').innerHTML = [1, 2, 3].map(i => `<span class="${i <= stars ? '' : 'off'}">⭐</span>`).join('');
+  $('resText').innerHTML = (G.hearts <= 0 ? 'Too many passengers walked out and complained.<br>' : '') +
+    `🪙 ${G.coins} coins (goal ${goalFor(f)})<br>${G.served} served · ${G.lost} stormed off`;
+  const nextDish = avail(f + 1).filter(k => DISH[k].from === f + 1).map(k => DISH[k].e);
+  const nextRoom = ROOMS.filter(R => R.from === f + 1).map(R => 'new cabin: ' + R.name);
+  if (stars && f + 1 > save.flight) { save.flight = f + 1; store.set(save); }
+  $('unlock').textContent = stars && (nextDish.length || nextRoom.length) ? `Next flight: ${[...nextDish, ...nextRoom].join('  ')}` : '';
+  $('nextBtn').hidden = !stars;
+  $('result').hidden = false;
+}
+
+function openBook() {
+  if (G) G.paused = true;
+  const f = G ? G.f : save.flight;
+  $('book').innerHTML = Object.values(DISH).map(d => {
+    const lock = d.from > f ? ' lock' : '';
+    return `<span class="d${lock}">${d.e}</span><span class="${lock}"><b>${d.n}</b>${lock ? ` · flight ${d.from}` : ''}<br>` +
+      `<span class="c">${d.c.map(i => ING[i].e).join(' ')}</span></span><span class="pr${lock}">🪙${d.p}</span>`;
+  }).join('');
+  $('bookO').hidden = false;
+}
+$('bookBtn').onclick = openBook;
+$('bookClose').onclick = () => { $('bookO').hidden = true; if (G) G.paused = false; last = performance.now(); };
+document.addEventListener('visibilitychange', () => { if (G && !G.over && document.hidden) openBook(); });
+
+let last = performance.now();
+function loop(now) {
+  const dt = Math.min(.05, (now - last) / 1000); last = now;
+  if (G && !G.over && !G.paused) { move(dt); tick(dt); }
+  renderer.render(scene, camera);
+  requestAnimationFrame(loop);
+}
+camera.position.set(0, 1.62, ROOMS[0].stand); camera.rotation.set(-.12, 0, 0);
+requestAnimationFrame(loop);
+$('playBtn').onclick = () => startFlight(save.flight);
+$('retryBtn').onclick = () => startFlight(G.f);
+$('nextBtn').onclick = () => startFlight(G.f + 1);
+$('playBtn').textContent = save.flight > 1 ? `Continue: Flight ${save.flight}` : 'Board the plane';
+
+// ---------- self-check ----------
+console.assert(trayMakes(['lettuce', 'bread', 'cheese'], 1) === 'sandwich', 'any order');
+console.assert(trayMakes(['tea', 'milk'], 9) === undefined, 'exact set');
+console.assert(orderSize(9, 0, 0) === 3 && dishWeight('bento', 8) === 16, 'difficulty');
+console.assert(payFor(['curry'], .2).total === 11, 'angry pay');
+console.assert(ROOMS.every((R, r) => roomAt(R.stand) === r), 'every stand point is inside its own room');
+ROOMS.forEach((R, r) => R.rowZ && console.assert(R.rowZ.every(z => roomAt(z) === r), 'rows inside their room', R.name));
+</script>
+</body>
+</html>
