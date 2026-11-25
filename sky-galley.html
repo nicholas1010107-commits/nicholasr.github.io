@@ -1,0 +1,462 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Sky Galley</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --sky: #4fb3ff; --sky2: #bfe6ff; --cabin: #fff4e2; --cabin2: #f3e2c6;
+    --seat: #3b6fe0; --seat2: #2a55b8; --wood: #d4925a; --wood2: #b0733f;
+    --steel: #e3ebf3; --steel2: #c4d1de; --ink: #2b2f4a; --green: #3ccf6e; --yellow: #ffc83d; --red: #ff5a5a;
+    --pop: #ff7a3d;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; overflow: hidden; }
+  body { font-family: "Fredoka", system-ui, sans-serif; color: var(--ink); background: var(--cabin);
+    display: grid; grid-template-rows: auto 1fr auto auto; height: 100dvh; user-select: none; touch-action: manipulation; }
+
+  /* chunky mobile-game buttons: solid colour + darker bottom edge that squashes on press */
+  .chunk { border: 0; border-radius: 18px; font: 700 18px "Fredoka", sans-serif; color: #fff; cursor: pointer;
+    background: var(--pop); box-shadow: 0 6px 0 #c9541f; padding: 14px 26px; transition: transform .06s, box-shadow .06s; }
+  .chunk:active { transform: translateY(4px); box-shadow: 0 2px 0 #c9541f; }
+  .chunk.blue { background: var(--seat); box-shadow: 0 6px 0 var(--seat2); }
+
+  /* ---------- top bar ---------- */
+  #top { background: var(--sky); color: #fff; display: flex; align-items: center; gap: 14px; padding: 10px 16px;
+    padding-top: max(10px, env(safe-area-inset-top)); box-shadow: 0 4px 0 #2f8fe0; z-index: 2; }
+  .pill { background: rgba(255,255,255,.25); border-radius: 999px; padding: 6px 14px; font-weight: 700; font-size: 18px; white-space: nowrap; }
+  #route { flex: 1; height: 8px; border-radius: 8px; position: relative; min-width: 60px;
+    background: repeating-linear-gradient(90deg, rgba(255,255,255,.9) 0 10px, transparent 10px 18px); }
+  #plane { position: absolute; top: 50%; transform: translate(-50%, -50%); font-size: 26px; left: 0; filter: drop-shadow(0 2px 0 rgba(0,0,0,.15)); }
+  #route::after { content: "🏁"; position: absolute; right: -6px; top: 50%; transform: translateY(-55%); font-size: 18px; }
+  #goal { font-size: 14px; opacity: .9; }
+
+  /* ---------- cabin ---------- */
+  #cabin { position: relative; overflow: hidden; display: flex; flex-direction: column;
+    background: linear-gradient(var(--cabin) 0 66%, var(--cabin2) 66%); --bh: clamp(80px, 19vh, 170px); }
+  /* overhead luggage bins: one door per sixth of the width, separated by a darker seam */
+  #bins { height: clamp(26px, 9vh, 80px); border-radius: 0 0 22px 22px; box-shadow: 0 6px 0 #d8c7aa;
+    background: repeating-linear-gradient(90deg, #efe3cf 0 calc(16.666% - 6px), #d8c7aa 0 16.666%); }
+  #windows { display: flex; justify-content: space-around; padding: 14px 10px 0; }
+  .win { width: clamp(40px, 7.5vh, 70px); height: clamp(56px, 11vh, 100px); border-radius: 40px; border: 6px solid #e5d3b6; overflow: hidden;
+    background:
+      radial-gradient(14px 8px at 30% 40%, #fff 98%, transparent) 0 0 / 90px 60px repeat-x,
+      radial-gradient(10px 6px at 70% 70%, #fff 98%, transparent) 0 0 / 70px 60px repeat-x,
+      linear-gradient(var(--sky), var(--sky2));
+    animation: clouds 6s linear infinite; }
+  @keyframes clouds { to { background-position: -90px 0, -140px 0, 0 0; } }
+  /* every seat dimension derives from --bh (seat-back height), which scales with the screen height */
+  #seats { flex: 1; display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; padding: 0 12px 3%;
+    align-content: end; align-items: end; }
+  .seat { position: relative; height: calc(var(--bh) + 72px); display: flex; justify-content: center; align-items: flex-end; }
+  .seat .back { position: absolute; bottom: 0; width: 82%; max-width: calc(var(--bh) * 1.05); height: var(--bh); border-radius: 24px 24px 12px 12px;
+    background: var(--seat); box-shadow: inset 0 -12px 0 var(--seat2); }
+  .seat .back::before { content: ""; position: absolute; top: 8px; left: 18%; right: 18%; height: 14px; border-radius: 8px; background: #fff; opacity: .85; }
+  .pax { position: relative; font-size: calc(var(--bh) * .45); line-height: 1; margin-bottom: calc(var(--bh) * .3); transition: transform .3s; }
+  .pax.in { animation: sitdown .35s ease-out; }
+  @keyframes sitdown { from { transform: translateY(-40px); opacity: 0; } }
+  .bubble { position: absolute; bottom: calc(var(--bh) + 26px); left: 50%; transform: translateX(-50%); background: #fff; border-radius: 16px;
+    padding: 6px 8px; display: flex; gap: 2px; font-size: 26px; box-shadow: 0 4px 0 rgba(0,0,0,.08); white-space: nowrap; }
+  .bubble::after { content: ""; position: absolute; bottom: -8px; left: 50%; margin-left: -8px;
+    border: 8px solid transparent; border-bottom: 0; border-top-color: #fff; }
+  .bar { position: absolute; bottom: calc(var(--bh) + 10px); left: 50%; transform: translateX(-50%); width: 64px; height: 8px; border-radius: 6px; background: rgba(0,0,0,.12); overflow: hidden; }
+  .bar i { display: block; height: 100%; width: 100%; background: var(--green); border-radius: 6px; }
+  .float { position: absolute; bottom: calc(var(--bh) + 50px); left: 50%; transform: translateX(-50%); font-weight: 700; font-size: 22px; color: #e39b00;
+    text-shadow: 0 2px 0 #fff; animation: rise 1s ease-out forwards; pointer-events: none; }
+  @keyframes rise { to { transform: translate(-50%, -50px); opacity: 0; } }
+
+  /* ---------- serving counter ---------- */
+  #counter { background: var(--wood); box-shadow: inset 0 6px 0 var(--wood2), 0 -2px 0 var(--wood2); padding: 10px 12px;
+    display: flex; gap: 10px; align-items: center; justify-content: center; }
+  .slot { width: 64px; height: 64px; border-radius: 50%; background: #fff; box-shadow: inset 0 -5px 0 #e6e0d6, 0 3px 0 var(--wood2);
+    display: grid; place-items: center; font-size: 36px; cursor: pointer; }
+  .slot:empty { opacity: .45; cursor: default; }
+  .hint { color: #fff; font-weight: 600; font-size: 14px; max-width: 110px; line-height: 1.15; opacity: .9; }
+
+  /* ---------- galley ---------- */
+  #galley { background: var(--steel); padding: 14px 12px max(14px, env(safe-area-inset-bottom));
+    display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; align-items: stretch; }
+  .st { position: relative; width: 96px; min-height: 104px; border-radius: 20px; border: 0; cursor: pointer;
+    background: #fff; box-shadow: 0 6px 0 var(--steel2); display: flex; flex-direction: column; align-items: center; justify-content: center;
+    font: 600 14px "Fredoka", sans-serif; color: var(--ink); gap: 4px; transition: transform .06s, box-shadow .06s; }
+  .st:active { transform: translateY(4px); box-shadow: 0 2px 0 var(--steel2); }
+  .st .ic { font-size: 40px; line-height: 1; }
+  .st .ring { position: absolute; top: 6px; right: 6px; width: 24px; height: 24px; border-radius: 50%; display: none;
+    background: conic-gradient(var(--c, var(--green)) calc(var(--p, 0) * 1turn), #e8edf2 0); }
+  .st.cook .ring, .st.ready .ring, .st.warn .ring { display: block; }
+  .st.cook .ic { animation: wobble .5s ease-in-out infinite; }
+  .st.ready { background: #eafff0; } .st.ready .ic { animation: bounce .6s ease-in-out infinite; }
+  .st.warn { background: #fff4d6; --c: var(--red); } .st.warn .ic { animation: bounce .25s ease-in-out infinite; }
+  .st.burnt { background: #ffe1e1; }
+  @keyframes wobble { 50% { transform: rotate(-8deg) scale(1.05); } }
+  @keyframes bounce { 50% { transform: translateY(-6px); } }
+  .board { display: flex; gap: 8px; align-items: center; background: #fff; border-radius: 20px; padding: 8px 10px; box-shadow: 0 6px 0 var(--steel2); }
+  .ing { width: 54px; height: 54px; border-radius: 14px; border: 0; background: #f6f1e7; font-size: 30px; cursor: pointer; box-shadow: 0 4px 0 #e2d8c6; }
+  .ing:active { transform: translateY(3px); box-shadow: 0 1px 0 #e2d8c6; }
+  .plate { width: 92px; height: 70px; border-radius: 50%; background: #fff; border: 4px solid #e9eef3; display: flex;
+    flex-wrap: wrap; align-items: center; justify-content: center; font-size: 22px; line-height: 1; cursor: pointer; }
+  .shake { animation: shake .3s; }
+  @keyframes shake { 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
+  .popin { animation: popin .25s ease-out; }
+  @keyframes popin { from { transform: scale(.3); } }
+
+  /* ---------- screens ---------- */
+  .screen { position: fixed; inset: 0; z-index: 10; display: grid; place-items: center; padding: 16px;
+    background: linear-gradient(var(--sky), var(--sky2)); }
+  .screen[hidden] { display: none; }
+  .screen.dim { background: rgba(43, 47, 74, .45); }
+  .card { background: #fff; border-radius: 28px; padding: 28px 24px; text-align: center; max-width: 420px; width: 100%;
+    box-shadow: 0 10px 0 rgba(0,0,0,.12); }
+  .card h1 { font-size: 44px; color: var(--seat); line-height: 1; margin: 6px 0 10px; letter-spacing: .5px; }
+  .card h2 { font-size: 30px; margin-bottom: 6px; }
+  .card p { font-size: 17px; line-height: 1.45; margin: 8px 0; opacity: .85; }
+  .card .row { display: flex; gap: 12px; justify-content: center; margin-top: 18px; flex-wrap: wrap; }
+  .logo { font-size: 72px; animation: fly 2.5s ease-in-out infinite; display: inline-block; }
+  @keyframes fly { 50% { transform: translateY(-10px) rotate(-4deg); } }
+  .stars { font-size: 48px; letter-spacing: 6px; margin: 8px 0; }
+  .stars .off { filter: grayscale(1); opacity: .3; }
+  .menu-items { font-size: 30px; letter-spacing: 4px; margin: 10px 0; }
+  #unlock { background: #fff6d8; border-radius: 14px; padding: 10px; font-weight: 600; margin-top: 10px; }
+  #unlock:empty { display: none; }
+
+  @media (max-width: 640px) {
+    #cabin { --bh: clamp(56px, 9vh, 90px); }
+    #seats { grid-template-columns: repeat(3, 1fr); row-gap: 0; }
+    .bubble { font-size: 22px; padding: 4px 6px; } .bar { width: 54px; }
+    .win:nth-child(n+5) { display: none; }
+    .st { width: 78px; min-height: 88px; } .st .ic { font-size: 32px; }
+    .ing { width: 44px; height: 44px; font-size: 24px; } .plate { width: 72px; height: 56px; }
+    .slot { width: 52px; height: 52px; font-size: 28px; } .hint { display: none; }
+    #goal { display: none; } .pill { font-size: 15px; padding: 5px 10px; }
+  }
+</style>
+</head>
+<body>
+<div id="top">
+  <span class="pill" id="flightL">Flight 1</span>
+  <div id="route"><span id="plane">✈️</span></div>
+  <span class="pill">🪙 <span id="coins">0</span><span id="goal"></span></span>
+</div>
+
+<div id="cabin">
+  <div id="bins"></div>
+  <div id="windows"></div>
+  <div id="seats"></div>
+</div>
+
+<div id="counter">
+  <span class="hint">Tap a dish to serve it</span>
+  <div class="slot"></div><div class="slot"></div><div class="slot"></div><div class="slot"></div>
+</div>
+
+<div id="galley"></div>
+
+<div class="screen" id="menu">
+  <div class="card">
+    <div class="logo">✈️</div>
+    <h1>Sky Galley</h1>
+    <p>You're the cabin crew. Passengers order snacks, you cook them in the galley, and you serve before they lose patience. Faster service means bigger tips.</p>
+    <div class="menu-items">☕ 🧃 🥪 🍝 🥗 🍵</div>
+    <p style="font-size:14px">New dishes unlock on every flight.</p>
+    <div class="row"><button class="chunk" id="playBtn">Board the plane</button></div>
+  </div>
+</div>
+
+<div class="screen dim" id="result" hidden>
+  <div class="card">
+    <h2 id="resTitle">Landed!</h2>
+    <div class="stars" id="stars"></div>
+    <p id="resText"></p>
+    <div id="unlock"></div>
+    <div class="row">
+      <button class="chunk blue" id="retryBtn">Retry</button>
+      <button class="chunk" id="nextBtn">Next flight</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const rnd = (a, b) => a + Math.random() * (b - a);
+const pick = a => a[Math.floor(Math.random() * a.length)];
+const store = {
+  get() { try { return JSON.parse(localStorage.getItem('skyGalley')) || { flight: 1 }; } catch { return { flight: 1 }; } },
+  set(v) { try { localStorage.setItem('skyGalley', JSON.stringify(v)); } catch {} }
+};
+
+// ---------- menu data ----------
+// p = price in coins, from = first flight it appears on
+const DISH = {
+  coffee:   { e: '☕', p: 5,  from: 1 },
+  juice:    { e: '🧃', p: 4,  from: 1 },
+  sandwich: { e: '🥪', p: 9,  from: 2 },
+  meal:     { e: '🍝', p: 14, from: 3 },
+  salad:    { e: '🥗', p: 8,  from: 4 },
+  tea:      { e: '🍵', p: 5,  from: 5 },
+};
+// timed stations: cook for `dur` s; the oven also burns `burn` s after it's ready
+const TIMED = {
+  coffee: { name: 'Coffee', dur: 3 },
+  meal:   { name: 'Oven',   dur: 4, burn: 5 },
+  tea:    { name: 'Kettle', dur: 2.5 },
+};
+// plate recipes: a set of ingredients, order doesn't matter
+const RECIPES = { sandwich: ['🍞', '🧀', '🥬'], salad: ['🥬', '🍅'] };
+const PAX = ['🧑', '👩', '👨', '👵', '👴', '🧔', '👩‍🦰', '👨‍🦱', '🧒', '👱‍♀️', '👲', '🧕', '👩‍🦳', '🤠'];
+
+const FLIGHT_SECS = 90;
+const SEATS = 6, SLOTS = 4;
+
+// difficulty as a function of flight number f
+const patienceFor = f => Math.max(16, 32 - 2 * f);           // seconds a passenger waits
+const spawnGap    = f => Math.max(2.2, 6 - .5 * f);           // average seconds between new passengers
+const twoItemP    = f => Math.min(.5, .1 * (f - 1));          // chance an order has 2 dishes
+const goalFor     = f => 50 + 35 * (f - 1);                   // coins needed for 1 star
+// stars: 1 at the goal, 2 at 1.5× the goal, 3 at 2× the goal
+const starsFor = (coins, f) => coins >= 2 * goalFor(f) ? 3 : coins >= 1.5 * goalFor(f) ? 2 : coins >= goalFor(f) ? 1 : 0;
+
+// payment: price of the order + tip proportional to patience left (up to +60%)
+const payFor = (order, patLeft, patMax) => {
+  const base = order.reduce((s, k) => s + DISH[k].p, 0);
+  return { base, tip: Math.round(base * .6 * Math.max(0, patLeft) / patMax) };
+};
+
+// which recipe (if any) the plate's ingredients make, ignoring order
+const plateMakes = (plate, avail) => Object.keys(RECIPES).find(k => avail.includes(k) &&
+  RECIPES[k].length === plate.length && RECIPES[k].every(i => plate.includes(i)));
+
+// ---------- audio ----------
+let ac;
+function beep(f, d = .1, type = 'triangle', v = .08, slide = 0) {
+  try {
+    ac = ac || new AudioContext();
+    const o = ac.createOscillator(), g = ac.createGain(), t = ac.currentTime;
+    o.type = type; o.frequency.setValueAtTime(f, t);
+    if (slide) o.frequency.exponentialRampToValueAtTime(slide, t + d);
+    g.gain.setValueAtTime(v, t); g.gain.exponentialRampToValueAtTime(.0001, t + d);
+    o.connect(g).connect(ac.destination); o.start(t); o.stop(t + d);
+  } catch {}
+}
+const sfx = {
+  tap: () => beep(600, .05, 'sine', .06),
+  ding: () => beep(1320, .2, 'sine', .08),
+  coin: () => { beep(988, .08, 'square', .04); setTimeout(() => beep(1319, .15, 'square', .04), 70); },
+  bad: () => beep(160, .25, 'sawtooth', .05),
+  angry: () => beep(220, .4, 'sawtooth', .06, 90),
+};
+
+// ---------- state ----------
+let G = null;                       // current flight
+let save = store.get();
+
+function avail(f) { return Object.keys(DISH).filter(k => DISH[k].from <= f); }
+
+// ---------- build the scene ----------
+$('windows').innerHTML = '<div class="win"></div>'.repeat(8);
+const seatEls = Array.from({ length: SEATS }, () => {
+  const el = document.createElement('div'); el.className = 'seat';
+  el.innerHTML = '<div class="back"></div>';
+  $('seats').appendChild(el); return el;
+});
+const slotEls = [...document.querySelectorAll('.slot')];
+slotEls.forEach((el, i) => el.addEventListener('pointerdown', () => serve(i)));
+
+function buildGalley(f) {
+  const a = avail(f), g = $('galley');
+  g.innerHTML = '';
+  G.st = {};
+  for (const k of Object.keys(TIMED)) if (a.includes(k)) {
+    const b = document.createElement('button'); b.className = 'st';
+    b.innerHTML = `<span class="ring"></span><span class="ic">${DISH[k].e}</span>${TIMED[k].name}`;
+    b.addEventListener('pointerdown', () => tapTimed(k));
+    g.appendChild(b); G.st[k] = { el: b, state: 'idle', t: 0 };
+  }
+  if (a.includes('juice')) {
+    const b = document.createElement('button'); b.className = 'st';
+    b.innerHTML = `<span class="ic">🧃</span>Juice`;
+    b.addEventListener('pointerdown', () => { if (!toCounter('juice')) shake(b); });
+    g.appendChild(b);
+  }
+  const plates = Object.keys(RECIPES).filter(k => a.includes(k));
+  if (plates.length) {
+    const ings = [...new Set(plates.flatMap(k => RECIPES[k]))];
+    const board = document.createElement('div'); board.className = 'board';
+    board.innerHTML = ings.map(i => `<button class="ing">${i}</button>`).join('') + '<div class="plate" title="Tap to clear"></div>';
+    board.querySelectorAll('.ing').forEach(b => b.addEventListener('pointerdown', () => addIng(b.textContent)));
+    board.querySelector('.plate').addEventListener('pointerdown', () => { G.plate = []; renderPlate(); sfx.tap(); });
+    g.appendChild(board);
+    G.plateEl = board.querySelector('.plate');
+  }
+  const trash = document.createElement('button'); trash.className = 'st';
+  trash.innerHTML = '<span class="ic">🗑️</span>Bin';
+  trash.addEventListener('pointerdown', () => {
+    // bin clears burnt food first, otherwise the last dish on the counter
+    const burnt = Object.values(G.st).find(s => s.state === 'burnt');
+    if (burnt) { burnt.state = 'idle'; sfx.tap(); }
+    else if (G.counter.length) { G.counter.pop(); renderCounter(); sfx.tap(); }
+  });
+  g.appendChild(trash);
+}
+
+// ---------- galley actions ----------
+function toCounter(k) {
+  if (G.counter.length >= SLOTS) return false;
+  G.counter.push(k); renderCounter(true); sfx.ding(); return true;
+}
+function tapTimed(k) {
+  const s = G.st[k];
+  if (s.state === 'idle') { s.state = 'cook'; s.t = 0; sfx.tap(); }
+  else if (s.state === 'ready' || s.state === 'warn') { if (toCounter(k)) s.state = 'idle'; else shake(s.el); }
+  else if (s.state === 'burnt') { s.state = 'idle'; sfx.tap(); }
+  else shake(s.el);
+}
+function addIng(i) {
+  if (G.plate.includes(i) || G.plate.length >= 3) return shake(G.plateEl);
+  G.plate.push(i); sfx.tap();
+  const made = plateMakes(G.plate, avail(G.f));
+  if (made) {
+    if (toCounter(made)) G.plate = [];
+    else { G.plate.pop(); shake(G.plateEl); }
+  }
+  renderPlate();
+}
+function serve(i) {
+  const k = G?.counter[i]; if (!k) return;
+  // give the dish to whoever wants it and is closest to losing patience
+  const who = G.seats.map((p, s) => ({ p, s })).filter(o => o.p && !o.p.gone && o.p.left.includes(k))
+                     .sort((a, b) => a.p.pat - b.p.pat)[0];
+  if (!who) { shake(slotEls[i]); sfx.bad(); return; }
+  const p = who.p;
+  p.left.splice(p.left.indexOf(k), 1);
+  G.counter.splice(i, 1); renderCounter();
+  if (!p.left.length) {
+    const { base, tip } = payFor(p.order, p.pat, p.max);
+    G.coins += base + tip; G.served++;
+    floatText(who.s, `+${base + tip}` + (tip ? ' 💖' : ''));
+    sfx.coin(); leave(who.s, '😋');
+  } else sfx.ding();
+  renderSeat(who.s);
+}
+
+// ---------- passengers ----------
+function spawn() {
+  const empty = G.seats.map((p, i) => p ? -1 : i).filter(i => i >= 0);
+  if (!empty.length) return;
+  const s = pick(empty), a = avail(G.f);
+  const order = [pick(a)];
+  if (Math.random() < twoItemP(G.f)) order.push(pick(a));
+  const max = patienceFor(G.f);
+  G.seats[s] = { face: pick(PAX), order, left: [...order], pat: max, max, fresh: true };
+  renderSeat(s);
+}
+function leave(s, face) {
+  const p = G.seats[s]; p.gone = true; p.face = face;
+  renderSeat(s);
+  setTimeout(() => { if (G && G.seats[s] === p) { G.seats[s] = null; renderSeat(s); } }, 700);
+}
+
+// ---------- rendering ----------
+function renderSeat(s) {
+  const p = G.seats[s], el = seatEls[s];
+  el.querySelectorAll('.pax,.bubble,.bar').forEach(n => n.remove());
+  if (!p) return;
+  el.insertAdjacentHTML('beforeend',
+    `<div class="pax${p.fresh ? ' in' : ''}">${p.face}</div>` +
+    (p.gone ? '' : `<div class="bubble">${p.left.map(k => DISH[k].e).join('')}</div><div class="bar"><i></i></div>`));
+  p.fresh = false;
+}
+function renderCounter(popLast) {
+  slotEls.forEach((el, i) => {
+    el.textContent = G.counter[i] ? DISH[G.counter[i]].e : '';
+    el.classList.toggle('popin', !!popLast && i === G.counter.length - 1);
+  });
+}
+function renderPlate() { if (G.plateEl) G.plateEl.textContent = G.plate.join(''); }
+function shake(el) { el.classList.remove('shake'); void el.offsetWidth; el.classList.add('shake'); sfx.bad(); }
+function floatText(s, txt) {
+  const d = document.createElement('div'); d.className = 'float'; d.textContent = txt;
+  seatEls[s].appendChild(d); setTimeout(() => d.remove(), 1000);
+}
+
+// ---------- flight loop ----------
+function startFlight(f) {
+  G = { f, time: 0, coins: 0, served: 0, lost: 0, seats: Array(SEATS).fill(null), counter: [], plate: [], spawnT: 1 };
+  buildGalley(f); seatEls.forEach((_, i) => renderSeat(i)); renderCounter(); renderPlate();
+  $('flightL').textContent = `Flight ${f}`;
+  $('goal').textContent = ` / ${goalFor(f)}`;
+  $('menu').hidden = true; $('result').hidden = true;
+  last = performance.now();
+}
+
+function tick(dt) {
+  G.time += dt;
+  // new passengers, except in the last 12 s so the flight can wind down
+  G.spawnT -= dt;
+  if (G.spawnT <= 0 && G.time < FLIGHT_SECS - 12) { spawn(); G.spawnT = spawnGap(G.f) * rnd(.6, 1.4); }
+
+  G.seats.forEach((p, s) => {
+    if (!p || p.gone) return;
+    p.pat -= dt;
+    const r = Math.max(0, p.pat / p.max), bar = seatEls[s].querySelector('.bar i');
+    bar.style.width = r * 100 + '%';
+    bar.style.background = r > .5 ? 'var(--green)' : r > .25 ? 'var(--yellow)' : 'var(--red)';
+    if (p.pat <= 0) { G.lost++; sfx.angry(); leave(s, '😠'); }
+  });
+
+  for (const [k, s] of Object.entries(G.st)) {
+    const T = TIMED[k];
+    if (s.state === 'cook') { s.t += dt; if (s.t >= T.dur) { s.state = 'ready'; s.t = 0; sfx.ding(); } }
+    else if ((s.state === 'ready' || s.state === 'warn') && T.burn) {
+      s.t += dt;
+      if (s.t >= T.burn * .5) s.state = 'warn';
+      if (s.t >= T.burn) { s.state = 'burnt'; sfx.bad(); }
+    }
+    s.el.className = 'st ' + s.state;
+    s.el.querySelector('.ic').textContent = s.state === 'burnt' ? '🔥' : DISH[k].e;
+    // ring = cooking progress, or the time left before burning
+    s.el.style.setProperty('--p', s.state === 'cook' ? s.t / T.dur : T.burn ? 1 - s.t / T.burn : 1);
+  }
+
+  $('coins').textContent = G.coins;
+  $('plane').style.left = Math.min(100, G.time / FLIGHT_SECS * 100) + '%';
+  if (G.time >= FLIGHT_SECS) land();
+}
+
+function land() {
+  const f = G.f, stars = starsFor(G.coins, f);
+  $('resTitle').textContent = stars ? 'Smooth landing!' : 'Bumpy landing…';
+  $('stars').innerHTML = [1, 2, 3].map(i => `<span class="${i <= stars ? '' : 'off'}">⭐</span>`).join('');
+  $('resText').innerHTML = `🪙 ${G.coins} coins (goal ${goalFor(f)})<br>${G.served} served · ${G.lost} left unhappy`;
+  const nextNew = Object.keys(DISH).filter(k => DISH[k].from === f + 1);
+  if (stars && f + 1 > save.flight) { save.flight = f + 1; store.set(save); }
+  $('unlock').textContent = stars && nextNew.length ? `New on the next flight: ${nextNew.map(k => DISH[k].e).join(' ')}` : '';
+  $('nextBtn').hidden = !stars;
+  $('result').hidden = false;
+  G.over = true;
+}
+
+let last = performance.now();
+function loop(now) {
+  const dt = Math.min(.05, (now - last) / 1000); last = now;
+  if (G && !G.over && !G.paused) tick(dt);
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+document.addEventListener('visibilitychange', () => { if (G) G.paused = document.hidden; last = performance.now(); });
+
+$('playBtn').onclick = () => startFlight(save.flight);
+$('retryBtn').onclick = () => startFlight(G.f);
+$('nextBtn').onclick = () => startFlight(G.f + 1);
+$('playBtn').textContent = save.flight > 1 ? `Continue: Flight ${save.flight}` : 'Board the plane';
+
+// self-check: recipes match in any order, payment and star maths
+console.assert(plateMakes(['🥬', '🍞', '🧀'], avail(9)) === 'sandwich', 'sandwich any order');
+console.assert(plateMakes(['🍅', '🥬'], avail(3)) === undefined, 'salad locked before flight 4');
+console.assert(payFor(['meal', 'coffee'], 10, 20).tip === Math.round(19 * .6 * .5), 'tip formula');
+console.assert(starsFor(goalFor(2) * 1.5, 2) === 2 && starsFor(0, 1) === 0, 'stars');
+</script>
+</body>
+</html>
